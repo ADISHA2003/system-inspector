@@ -555,11 +555,17 @@
             const audioOutputs = devices.filter(d => d.kind === 'audiooutput').length;
             const videoInputs = devices.filter(d => d.kind === 'videoinput').length;
             
-            document.querySelector('[data-media-devices]').innerHTML = 
+            document.querySelector('[data-media-devices]').textContent = 
               `Cameras: ${videoInputs}, Microphones: ${audioInputs}, Speakers: ${audioOutputs}`;
+          })
+          .catch(err => {
+            document.querySelector('[data-media-devices]').textContent = 'Permission denied or error';
           });
         
-        mediaDetails.push({ label: "Media Devices", value: "<span data-media-devices>Detecting...</span>" });
+        mediaDetails.push(
+          { label: "Media Devices", value: "<span data-media-devices>Detecting...</span>" },
+          { label: "Media Support", value: "WebRTC " + ('RTCPeerConnection' in window ? "Supported" : "Not Supported") }
+        );
       }
       
       return mediaDetails;
@@ -572,7 +578,11 @@
       if ('usb' in navigator) {
         navigator.usb.getDevices()
           .then(devices => {
-            document.querySelector('[data-usb-devices]').textContent = devices.length;
+            document.querySelector('[data-usb-devices]').textContent = 
+              `${devices.length} device(s) connected`;
+          })
+          .catch(err => {
+            document.querySelector('[data-usb-devices]').textContent = 'Permission denied or error';
           });
         hardwareDetails.push({ label: "USB Devices", value: "<span data-usb-devices>Checking...</span>" });
       }
@@ -581,9 +591,22 @@
       if ('xr' in navigator) {
         navigator.xr.isSessionSupported('immersive-vr')
           .then(supported => {
-            document.querySelector('[data-vr-support]').textContent = supported ? "Supported" : "Not supported";
+            document.querySelector('[data-vr-support]').textContent = 
+              supported ? "VR Ready" : "VR Not Supported";
+          })
+          .catch(err => {
+            document.querySelector('[data-vr-support]').textContent = 'Cannot detect VR';
           });
         hardwareDetails.push({ label: "VR Support", value: "<span data-vr-support>Checking...</span>" });
+      }
+
+      // Add CPU & Memory info
+      if ('hardwareConcurrency' in navigator) {
+        hardwareDetails.push({ label: "CPU Threads", value: navigator.hardwareConcurrency });
+      }
+      
+      if ('deviceMemory' in navigator) {
+        hardwareDetails.push({ label: "RAM", value: navigator.deviceMemory + " GB" });
       }
       
       return hardwareDetails;
@@ -593,25 +616,39 @@
       const powerDetails = [];
       
       if ('getBattery' in navigator) {
-        navigator.getBattery().then(battery => {
-          // Add event listeners for battery changes
-          battery.addEventListener('chargingchange', () => {
-            document.querySelector('[data-charging-status]').textContent = 
-              battery.charging ? "Charging" : "Not charging";
+        navigator.getBattery()
+          .then(battery => {
+            const updateBatteryInfo = () => {
+              document.querySelector('[data-battery-status]').textContent = 
+                `${Math.round(battery.level * 100)}% (${battery.charging ? "Charging" : "Not charging"})`;
+              
+              document.querySelector('[data-battery-time]').textContent = 
+                battery.charging ? 
+                  (battery.chargingTime === Infinity ? "Calculating..." : 
+                    `${Math.round(battery.chargingTime / 60)} minutes until full`) : 
+                  (battery.dischargingTime === Infinity ? "Calculating..." : 
+                    `${Math.round(battery.dischargingTime / 60)} minutes remaining`);
+            };
+
+            // Add event listeners
+            battery.addEventListener('levelchange', updateBatteryInfo);
+            battery.addEventListener('chargingchange', updateBatteryInfo);
+            battery.addEventListener('chargingtimechange', updateBatteryInfo);
+            battery.addEventListener('dischargingtimechange', updateBatteryInfo);
+
+            // Initial update
+            updateBatteryInfo();
+            
+            powerDetails.push(
+              { label: "Battery Status", value: "<span data-battery-status>Checking...</span>" },
+              { label: "Time Remaining", value: "<span data-battery-time>Calculating...</span>" }
+            );
+          })
+          .catch(err => {
+            powerDetails.push({ label: "Battery Info", value: "Not available" });
           });
-          
-          battery.addEventListener('levelchange', () => {
-            document.querySelector('[data-battery-time]').textContent = 
-              battery.charging ? 
-                `${Math.round(battery.chargingTime / 60)} minutes until full` : 
-                `${Math.round(battery.dischargingTime / 60)} minutes remaining`;
-          });
-          
-          powerDetails.push(
-            { label: "Charging Status", value: "<span data-charging-status>Checking...</span>" },
-            { label: "Battery Time", value: "<span data-battery-time>Calculating...</span>" }
-          );
-        });
+      } else {
+        powerDetails.push({ label: "Battery API", value: "Not supported" });
       }
       
       return powerDetails;
