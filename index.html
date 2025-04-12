@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Inspector</title>
+  <style>
+    :root {
+      --bg-color: #f5f5f5;
+      --text-color: #333;
+      --card-bg: #fff;
+      --card-border: #ddd;
+      --header-bg: #4a6da7;
+      --header-text: #fff;
+      --section-bg: #e9eef6;
+      --section-text: #2c3e50;
+      --detail-label: #555;
+      --detail-value: #333;
+      --accent: #3498db;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #1a1a1a;
+      --text-color: #f0f0f0;
+      --card-bg: #2a2a2a;
+      --card-border: #444;
+      --header-bg: #2c3e50;
+      --header-text: #ecf0f1;
+      --section-bg: #34495e;
+      --section-text: #ecf0f1;
+      --detail-label: #bdc3c7;
+      --detail-value: #f0f0f0;
+      --accent: #3498db;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background-color: var(--header-bg);
+      color: var(--header-text);
+      padding: 15px 20px;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: 2px solid var(--header-text);
+      color: var(--header-text);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .section {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      margin-bottom: 15px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      background-color: var(--section-bg);
+      color: var(--section-text);
+      padding: 10px 15px;
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .section-icon {
+      margin-right: 10px;
+      font-size: 18px;
+    }
+
+    .section-content {
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 15px;
+    }
+
+    .detail {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-label {
+      color: var(--detail-label);
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    .detail-value {
+      color: var(--detail-value);
+      font-weight: 500;
+      font-size: 15px;
+      word-break: break-word;
+    }
+
+    @media (max-width: 768px) {
+      .section-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--detail-label);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>System Inspector</h1>
+      <button class="theme-toggle" id="themeToggle">Switch Theme</button>
+    </div>
+
+    <div id="results">
+      <!-- Sections will be inserted here by JavaScript -->
+    </div>
+
+    <div class="footer">
+      <p>System inspection performed on <span id="timestamp"></span></p>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggling
+    const themeToggle = document.getElementById('themeToggle');
+    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Set initial theme based on user preference
+    if (prefersDarkScheme.matches) {
+      document.body.setAttribute('data-theme', 'dark');
+    }
+    
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.body.getAttribute('data-theme');
+      document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
+    });
+
+    // Update timestamp
+    document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+    // System inspection function
+    function inspectSystem() {
+      const resultsContainer = document.getElementById('results');
+      const sections = [
+        {
+          id: 'browser',
+          icon: '🌐',
+          title: 'Browser & Device',
+          details: getBrowserDetails()
+        },
+        {
+          id: 'system',
+          icon: '💻',
+          title: 'System Information',
+          details: getSystemDetails()
+        },
+        {
+          id: 'display',
+          icon: '🖥️',
+          title: 'Display & Graphics',
+          details: getDisplayDetails()
+        },
+        {
+          id: 'network',
+          icon: '📶',
+          title: 'Network',
+          details: getNetworkDetails()
+        },
+        {
+          id: 'features',
+          icon: '✨',
+          title: 'Features & Capabilities',
+          details: getFeatureDetails()
+        },
+        {
+          id: 'storage',
+          icon: '💾',
+          title: 'Storage & Performance',
+          details: getStorageDetails()
+        }
+      ];
+
+      // Create sections
+      sections.forEach(section => {
+        const sectionElement = document.createElement('div');
+        sectionElement.className = 'section';
+        sectionElement.innerHTML = `
+          <div class="section-header" id="header-${section.id}">
+            <span class="section-icon">${section.icon}</span>
+            <span>${section.title}</span>
+          </div>
+          <div class="section-content" id="content-${section.id}">
+            ${section.details.map(detail => `
+              <div class="detail">
+                <div class="detail-label">${detail.label}</div>
+                <div class="detail-value">${detail.value}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        resultsContainer.appendChild(sectionElement);
+
+        // Make sections collapsible
+        document.getElementById(`header-${section.id}`).addEventListener('click', () => {
+          const content = document.getElementById(`content-${section.id}`);
+          content.classList.toggle('hidden');
+        });
+      });
+    }
+
+    function getBrowserDetails() {
+      const userAgent = navigator.userAgent;
+      const browserDetails = [];
+      
+      // Browser name and version detection
+      let browserName = "Unknown";
+      let browserVersion = "";
+      
+      if (/Edg/.test(userAgent)) {
+        browserName = "Microsoft Edge";
+      } else if (/Firefox/.test(userAgent)) {
+        browserName = "Firefox";
+      } else if (/Chrome/.test(userAgent)) {
+        browserName = "Chrome";
+      } else if (/Safari/.test(userAgent)) {
+        browserName = "Safari";
+      } else if (/Opera|OPR/.test(userAgent)) {
+        browserName = "Opera";
+      } else if (/MSIE|Trident/.test(userAgent)) {
+        browserName = "Internet Explorer";
+      }
+      
+      const versionMatch = userAgent.match(/(Firefox|Chrome|Safari|Edge|OPR|Version|MSIE|rv:)[\s\/:](\d+(\.\d+)?)/i);
+      browserVersion = versionMatch ? versionMatch[2] : "";
+      
+      browserDetails.push(
+        { label: "Browser", value: `${browserName} ${browserVersion}` },
+        { label: "User Agent", value: userAgent },
+        { label: "Language", value: navigator.language },
+        { label: "Cookies Enabled", value: navigator.cookieEnabled ? "Yes" : "No" },
+        { label: "Do Not Track", value: navigator.doNotTrack ? "Enabled" : "Disabled" }
+      );
+      
+      if (navigator.languages) {
+        browserDetails.push({ label: "Language Preferences", value: navigator.languages.join(", ") });
+      }
+      
+      return browserDetails;
+    }
+
+    function getSystemDetails() {
+      const userAgent = navigator.userAgent;
+      const platform = navigator.platform;
+      const systemDetails = [];
+      
+      // OS detection
+      let osName = "Unknown OS";
+      if (/Windows NT 10.0/.test(userAgent)) {
+        osName = "Windows 10/11";
+      } else if (/Windows NT 6.3/.test(userAgent)) {
+        osName = "Windows 8.1";
+      } else if (/Windows NT 6.2/.test(userAgent)) {
+        osName = "Windows 8";
+      } else if (/Windows NT 6.1/.test(userAgent)) {
+        osName = "Windows 7";
+      } else if (/Mac OS X|macOS/.test(userAgent)) {
+        osName = "macOS";
+      } else if (/iPhone|iPad|iPod/.test(userAgent)) {
+        osName = "iOS";
+      } else if (/Android/.test(userAgent)) {
+        osName = "Android";
+      } else if (/Linux/.test(userAgent)) {
+        osName = "Linux";
+      }
+      
+      // Device type detection
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(userAgent);
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const deviceType = isMobile ? "Mobile" : isTouchDevice ? "Tablet/Touch" : "Desktop";
+      
+      // Architecture detection
+      const architecture = /x86_64|Win64|x64|amd64/.test(userAgent) ? "64-bit" : "32-bit";
+      
+      systemDetails.push(
+        { label: "Operating System", value: osName },
+        { label: "Platform", value: platform },
+        { label: "Device Type", value: deviceType },
+        { label: "Architecture", value: architecture },
+        { label: "Date & Time", value: new Date().toLocaleString() },
+        { label: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone }
+      );
+      
+      if ('hardwareConcurrency' in navigator) {
+        systemDetails.push({ label: "CPU Cores", value: navigator.hardwareConcurrency });
+      }
+      
+      if ('deviceMemory' in navigator) {
+        systemDetails.push({ label: "Memory", value: navigator.deviceMemory + " GB" });
+      }
+      
+      return systemDetails;
+    }
+
+    function getDisplayDetails() {
+      const displayDetails = [];
+      
+      displayDetails.push(
+        { label: "Screen Resolution", value: `${window.screen.width}x${window.screen.height}` },
+        { label: "Window Size", value: `${window.innerWidth}x${window.innerHeight}` },
+        { label: "Pixel Ratio", value: window.devicePixelRatio }
+      );
+      
+      // Try to get GPU info
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        
+        if (gl) {
+          const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+          if (debugInfo) {
+            const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            displayDetails.push(
+              { label: "GPU Vendor", value: vendor },
+              { label: "GPU Renderer", value: renderer }
+            );
+          }
+          
+          displayDetails.push(
+            { label: "WebGL Version", value: gl.getParameter(gl.VERSION) },
+            { label: "Max Texture Size", value: gl.getParameter(gl.MAX_TEXTURE_SIZE) + "px" }
+          );
+        }
+      } catch (e) {
+        displayDetails.push({ label: "GPU Information", value: "Not available" });
+      }
+      
+      return displayDetails;
+    }
+
+    function getNetworkDetails() {
+      const networkDetails = [];
+      
+      // Check if connection info available
+      if ('connection' in navigator) {
+        const connection = navigator.connection;
+        networkDetails.push(
+          { label: "Connection Type", value: connection.effectiveType || "Unknown" },
+          { label: "Downlink Speed", value: connection.downlink ? connection.downlink + " Mbps" : "Unknown" },
+          { label: "RTT", value: connection.rtt ? connection.rtt + " ms" : "Unknown" },
+          { label: "Save Data Mode", value: connection.saveData ? "Enabled" : "Disabled" }
+        );
+      } else {
+        networkDetails.push({ label: "Network Information", value: "Not available" });
+      }
+      
+      networkDetails.push({ label: "Online Status", value: navigator.onLine ? "Online" : "Offline" });
+      
+      return networkDetails;
+    }
+
+    function getFeatureDetails() {
+      const features = [
+        { name: "Geolocation", test: 'geolocation' in navigator },
+        { name: "Camera/Microphone", test: 'mediaDevices' in navigator },
+        { name: "Web Bluetooth", test: 'bluetooth' in navigator },
+        { name: "Vibration", test: 'vibrate' in navigator },
+        { name: "Push Notifications", test: 'PushManager' in window },
+        { name: "Speech Recognition", test: 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window },
+        { name: "Speech Synthesis", test: 'speechSynthesis' in window },
+        { name: "Web Share", test: 'share' in navigator },
+        { name: "Gamepad API", test: 'getGamepads' in navigator },
+        { name: "Web Payments", test: 'PaymentRequest' in window },
+        { name: "WebGL", test: !!document.createElement('canvas').getContext('webgl') },
+        { name: "WebGL 2", test: !!document.createElement('canvas').getContext('webgl2') },
+        { name: "WebAssembly", test: typeof WebAssembly === 'object' },
+        { name: "Service Workers", test: 'serviceWorker' in navigator },
+        { name: "Web Workers", test: typeof Worker === 'function' },
+        { name: "Clipboard API", test: navigator.clipboard && 'writeText' in navigator.clipboard }
+      ];
+      
+      return features.map(feature => ({
+        label: feature.name,
+        value: feature.test ? "Supported" : "Not Supported"
+      }));
+    }
+
+    function getStorageDetails() {
+      const storageDetails = [];
+      
+      // Check performance metrics
+      try {
+        const perfEntries = performance.getEntriesByType("navigation");
+        if (perfEntries.length > 0) {
+          const p = perfEntries[0];
+          storageDetails.push(
+            { label: "Page Load Time", value: Math.round(p.loadEventEnd - p.startTime) + " ms" },
+            { label: "DOM Content Ready", value: Math.round(p.domContentLoadedEventEnd - p.startTime) + " ms" }
+          );
+        } else if (performance.timing) {
+          const t = performance.timing;
+          storageDetails.push(
+            { label: "Page Load Time", value: t.loadEventEnd - t.navigationStart + " ms" },
+            { label: "DOM Content Ready", value: t.domContentLoadedEventEnd - t.navigationStart + " ms" }
+          );
+        }
+      } catch (e) {
+        storageDetails.push({ label: "Performance Metrics", value: "Not available" });
+      }
+      
+      // Check storage information
+      try {
+        if ('storage' in navigator && navigator.storage.estimate) {
+          navigator.storage.estimate().then(estimate => {
+            const usedMB = Math.round(estimate.usage / (1024 * 1024));
+            const quotaMB = Math.round(estimate.quota / (1024 * 1024));
+            const percentUsed = Math.round((estimate.usage / estimate.quota) * 100);
+            
+            document.querySelector('[data-storage-usage]').textContent = 
+              `${usedMB} MB / ${quotaMB} MB (${percentUsed}%)`;
+          });
+          
+          storageDetails.push({ label: "Storage Usage", value: "<span data-storage-usage>Calculating...</span>" });
+        }
+      } catch (e) {
+        // Storage API not available
+      }
+      
+      // Check for local storage
+      try {
+        if (window.localStorage) {
+          storageDetails.push({ label: "localStorage", value: "Available" });
+        }
+      } catch (e) {
+        storageDetails.push({ label: "localStorage", value: "Disabled or blocked" });
+      }
+      
+      // Battery info if available
+      try {
+        if ('getBattery' in navigator) {
+          navigator.getBattery().then(battery => {
+            document.querySelector('[data-battery-level]').textContent = 
+              Math.round(battery.level * 100) + "% " + (battery.charging ? "(Charging)" : "(Not charging)");
+          });
+          
+          storageDetails.push({ label: "Battery", value: "<span data-battery-level>Checking...</span>" });
+        }
+      } catch (e) {
+        // Battery API not available
+      }
+      
+      return storageDetails;
+    }
+
+    // Run system inspection when page loads
+    window.addEventListener('DOMContentLoaded', inspectSystem);
+  </script>
+</body>
+</html>
