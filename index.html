@@ -213,6 +213,30 @@
           icon: '💾',
           title: 'Storage & Performance',
           details: getStorageDetails()
+        },
+        {
+          id: 'media',
+          icon: '🎥',
+          title: 'Media Devices',
+          details: getMediaDetails()
+        },
+        {
+          id: 'hardware',
+          icon: '🔌',
+          title: 'Hardware',
+          details: getHardwareInfo()
+        },
+        {
+          id: 'power',
+          icon: '🔋',
+          title: 'Power Management',
+          details: getPowerDetails()
+        },
+        {
+          id: 'networkStats',
+          icon: '📊',
+          title: 'Network Statistics',
+          details: getDetailedNetworkInfo()
         }
       ];
 
@@ -392,7 +416,39 @@
       
       networkDetails.push({ label: "Online Status", value: navigator.onLine ? "Online" : "Offline" });
       
-      return networkDetails;
+      return networkDetails.concat(getDetailedNetworkInfo());
+    }
+
+    function getDetailedNetworkInfo() {
+      const networkStats = [];
+      
+      // Resource timing data
+      if (window.performance && performance.getEntriesByType) {
+        const resources = performance.getEntriesByType("resource");
+        const totalSize = resources.reduce((total, resource) => {
+          return total + (resource.transferSize || 0);
+        }, 0);
+        
+        networkStats.push({
+          label: "Resources Loaded",
+          value: `${resources.length} (${Math.round(totalSize / 1024)} KB)`
+        });
+      }
+      
+      // Connection changes
+      if ('connection' in navigator) {
+        navigator.connection.addEventListener('change', () => {
+          document.querySelector('[data-network-quality]').textContent = 
+            `${navigator.connection.effectiveType} (${navigator.connection.downlink} Mbps)`;
+        });
+        
+        networkStats.push({
+          label: "Network Quality",
+          value: "<span data-network-quality>Monitoring...</span>"
+        });
+      }
+      
+      return networkStats;
     }
 
     function getFeatureDetails() {
@@ -486,6 +542,79 @@
       }
       
       return storageDetails;
+    }
+
+    function getMediaDetails() {
+      const mediaDetails = [];
+      
+      // Enumerate media devices
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            const audioInputs = devices.filter(d => d.kind === 'audioinput').length;
+            const audioOutputs = devices.filter(d => d.kind === 'audiooutput').length;
+            const videoInputs = devices.filter(d => d.kind === 'videoinput').length;
+            
+            document.querySelector('[data-media-devices]').innerHTML = 
+              `Cameras: ${videoInputs}, Microphones: ${audioInputs}, Speakers: ${audioOutputs}`;
+          });
+        
+        mediaDetails.push({ label: "Media Devices", value: "<span data-media-devices>Detecting...</span>" });
+      }
+      
+      return mediaDetails;
+    }
+
+    function getHardwareInfo() {
+      const hardwareDetails = [];
+      
+      // Check USB devices
+      if ('usb' in navigator) {
+        navigator.usb.getDevices()
+          .then(devices => {
+            document.querySelector('[data-usb-devices]').textContent = devices.length;
+          });
+        hardwareDetails.push({ label: "USB Devices", value: "<span data-usb-devices>Checking...</span>" });
+      }
+      
+      // Check virtual reality support
+      if ('xr' in navigator) {
+        navigator.xr.isSessionSupported('immersive-vr')
+          .then(supported => {
+            document.querySelector('[data-vr-support]').textContent = supported ? "Supported" : "Not supported";
+          });
+        hardwareDetails.push({ label: "VR Support", value: "<span data-vr-support>Checking...</span>" });
+      }
+      
+      return hardwareDetails;
+    }
+
+    function getPowerDetails() {
+      const powerDetails = [];
+      
+      if ('getBattery' in navigator) {
+        navigator.getBattery().then(battery => {
+          // Add event listeners for battery changes
+          battery.addEventListener('chargingchange', () => {
+            document.querySelector('[data-charging-status]').textContent = 
+              battery.charging ? "Charging" : "Not charging";
+          });
+          
+          battery.addEventListener('levelchange', () => {
+            document.querySelector('[data-battery-time]').textContent = 
+              battery.charging ? 
+                `${Math.round(battery.chargingTime / 60)} minutes until full` : 
+                `${Math.round(battery.dischargingTime / 60)} minutes remaining`;
+          });
+          
+          powerDetails.push(
+            { label: "Charging Status", value: "<span data-charging-status>Checking...</span>" },
+            { label: "Battery Time", value: "<span data-battery-time>Calculating...</span>" }
+          );
+        });
+      }
+      
+      return powerDetails;
     }
 
     // Run system inspection when page loads
