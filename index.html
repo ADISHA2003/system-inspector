@@ -138,7 +138,73 @@
       font-size: 14px;
       color: var(--detail-label);
     }
+
+    .system-summary {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tooltip-icon {
+      font-size: 12px;
+      margin-left: 5px;
+      cursor: help;
+    }
+
+    .search-container {
+      margin: 15px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-container input,
+    .search-container select {
+      padding: 8px;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .export-button {
+      padding: 8px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .system-tips {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
   </style>
+  <script>
+    function addTooltips() {
+      const technicalTerms = {
+        "RTT": "Round Trip Time - How long it takes for data to travel to its destination and back",
+        "WebGL": "Web Graphics Library - Enables 3D graphics in your browser",
+        "CPU Threads": "Number of processing units that can handle tasks simultaneously",
+        "GPU": "Graphics Processing Unit - Chip that handles visual calculations",
+        "WebAssembly": "Technology that allows running high-performance code in browsers",
+        "Service Workers": "Technology that enables offline functionality in web apps"
+      };
+
+      document.querySelectorAll('.detail-label').forEach(label => {
+        const term = label.textContent;
+        if (technicalTerms[term]) {
+          label.innerHTML += ` <span class="tooltip-icon">ℹ️</span>`;
+          label.setAttribute('title', technicalTerms[term]);
+        }
+      });
+    }
+  </script>
 </head>
 <body>
   <div class="container">
@@ -266,6 +332,9 @@
           content.classList.toggle('hidden');
         });
       });
+
+      // Add tooltips
+      addTooltips();
     }
 
     function getBrowserDetails() {
@@ -357,7 +426,38 @@
       if ('deviceMemory' in navigator) {
         systemDetails.push({ label: "Memory", value: navigator.deviceMemory + " GB" });
       }
+
+      // Add more useful system info
+      systemDetails.push(
+        { 
+          label: "Screen Type", 
+          value: window.matchMedia('(color-gamut: p3)').matches ? "High Color Quality (P3)" : "Standard"
+        },
+        { 
+          label: "Power Preference",
+          value: navigator.powerPreference || "No Preference"
+        },
+        {
+          label: "Dark Mode",
+          value: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Enabled" : "Disabled"
+        },
+        {
+          label: "Reduced Motion",
+          value: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? "Enabled" : "Disabled"
+        }
+      );
+
+      // Add estimated device performance
+      const performance = {
+        cpu: navigator.hardwareConcurrency > 4 ? "High" : "Standard",
+        memory: navigator.deviceMemory > 4 ? "High" : "Standard"
+      };
       
+      systemDetails.push({
+        label: "Estimated Performance",
+        value: `${performance.cpu} Performance Device (${performance.memory} Memory)`
+      });
+
       return systemDetails;
     }
 
@@ -654,8 +754,77 @@
       return powerDetails;
     }
 
+    // Add this function
+    function addExportButton() {
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'export-button';
+      exportBtn.textContent = '📥 Export System Information';
+      exportBtn.onclick = () => {
+        const systemData = {
+          browser: getBrowserDetails(),
+          system: getSystemDetails(),
+          network: getNetworkDetails(),
+          // ...add other sections
+          exportDate: new Date().toLocaleString()
+        };
+        
+        const blob = new Blob([JSON.stringify(systemData, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'system-info.json';
+        a.click();
+      };
+      
+      document.querySelector('.header').appendChild(exportBtn);
+    }
+
+    // Add this function
+    function generateSummary() {
+      const summary = document.createElement('div');
+      summary.className = 'system-summary';
+      summary.innerHTML = `
+        <div class="summary-card">
+          <h3>Quick Overview</h3>
+          <ul>
+            <li>You're using ${getBrowserName()} on ${getOSName()}</li>
+            <li>Your device is a ${getDeviceType()} with ${navigator.hardwareConcurrency} CPU threads</li>
+            <li>Your internet connection is ${getConnectionQuality()}</li>
+            <li>Screen resolution: ${window.screen.width}x${window.screen.height}</li>
+          </ul>
+        </div>
+      `;
+      
+      document.getElementById('results').prepend(summary);
+    }
+
+    // Add this function
+    function addSystemTips() {
+      const tips = document.createElement('div');
+      tips.className = 'system-tips';
+      tips.innerHTML = `
+        <div class="tips-card">
+          <h3>💡 Helpful Tips</h3>
+          <ul>
+            <li>Your device ${navigator.hardwareConcurrency > 4 ? 'is well-suited' : 'might struggle'} with demanding applications</li>
+            <li>Your screen ${window.devicePixelRatio > 1 ? 'supports' : "doesn't support"} high-resolution content</li>
+            <li>Your browser ${navigator.serviceWorker ? 'supports' : "doesn't support"} offline functionality</li>
+            <li>Your connection ${navigator.connection?.effectiveType === '4g' ? 'is suitable' : 'might be too slow'} for HD video</li>
+          </ul>
+        </div>
+      `;
+      
+      document.getElementById('results').appendChild(tips);
+    }
+
     // Run system inspection when page loads
-    window.addEventListener('DOMContentLoaded', inspectSystem);
+    window.addEventListener('DOMContentLoaded', () => {
+      inspectSystem();
+      addTooltips();
+      generateSummary();
+      addSystemTips();
+      addExportButton();
+    });
   </script>
 </body>
 </html>
