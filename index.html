@@ -213,23 +213,6 @@
       <button class="theme-toggle" id="themeToggle">Switch Theme</button>
     </div>
 
-    <div class="search-container">
-      <input type="text" id="searchInput" placeholder="Search for system information...">
-      <select id="categoryFilter">
-        <option value="all">All Categories</option>
-        <option value="browser">Browser & Device</option>
-        <option value="system">System Information</option>
-        <option value="network">Network</option>
-        <option value="display">Display & Graphics</option>
-        <option value="features">Features & Capabilities</option>
-        <option value="storage">Storage & Performance</option>
-        <option value="media">Media Devices</option>
-        <option value="hardware">Hardware</option>
-        <option value="power">Power Management</option>
-        <option value="networkStats">Network Statistics</option>
-      </select>
-    </div>
-
     <div id="results">
       <!-- Sections will be inserted here by JavaScript -->
     </div>
@@ -819,19 +802,104 @@
     function addSystemTips() {
       const tips = document.createElement('div');
       tips.className = 'system-tips';
+      
+      // Generate relevant tips based on system information
+      const hasPowerfulCPU = navigator.hardwareConcurrency > 4;
+      const hasHighResDisplay = window.devicePixelRatio > 1;
+      const hasGoodConnection = navigator.connection?.effectiveType === '4g';
+      const hasServiceWorker = 'serviceWorker' in navigator;
+      const hasLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
+      
       tips.innerHTML = `
         <div class="tips-card">
-          <h3>💡 Helpful Tips</h3>
-          <ul>
-            <li>Your device ${navigator.hardwareConcurrency > 4 ? 'is well-suited' : 'might struggle'} with demanding applications</li>
-            <li>Your screen ${window.devicePixelRatio > 1 ? 'supports' : "doesn't support"} high-resolution content</li>
-            <li>Your browser ${navigator.serviceWorker ? 'supports' : "doesn't support"} offline functionality</li>
-            <li>Your connection ${navigator.connection?.effectiveType === '4g' ? 'is suitable' : 'might be too slow'} for HD video</li>
+          <h3>💡 Helpful System Tips</h3>
+          <ul style="list-style: none; padding: 0;">
+            ${hasPowerfulCPU ? 
+              '<li>✅ Your device is well-suited for demanding applications and multitasking</li>' :
+              '<li>⚠️ Consider closing background applications for better performance</li>'
+            }
+            ${hasHighResDisplay ?
+              '<li>✅ Your display supports high-resolution content and crisp visuals</li>' :
+              '<li>ℹ️ Content will display in standard resolution on your screen</li>'
+            }
+            ${hasGoodConnection ?
+              '<li>✅ Your connection is suitable for HD video streaming</li>' :
+              '<li>⚠️ You might want to use lower quality settings for videos</li>'
+            }
+            ${hasServiceWorker ?
+              '<li>✅ Your browser supports offline functionality and PWA features</li>' :
+              '<li>ℹ️ Consider updating your browser for better offline support</li>'
+            }
+            ${hasLowMemory ?
+              '<li>⚠️ Limited system memory detected - try to keep fewer tabs open</li>' :
+              '<li>✅ You have sufficient memory for smooth browsing</li>'
+            }
+            <li>ℹ️ ${window.matchMedia('(prefers-color-scheme: dark)').matches ? 
+              'Dark mode is enabled - easier on the eyes at night' : 
+              'Light mode is enabled - good for daytime viewing'}</li>
           </ul>
         </div>
       `;
       
       document.getElementById('results').appendChild(tips);
+    }
+
+    // Helper functions for summary generation
+    function getBrowserName() {
+      const userAgent = navigator.userAgent;
+      if (/Edg/.test(userAgent)) return "Microsoft Edge";
+      if (/Firefox/.test(userAgent)) return "Firefox";
+      if (/Chrome/.test(userAgent)) return "Chrome";
+      if (/Safari/.test(userAgent)) return "Safari";
+      if (/Opera|OPR/.test(userAgent)) return "Opera";
+      if (/MSIE|Trident/.test(userAgent)) return "Internet Explorer";
+      return "Unknown Browser";
+    }
+
+    function getOSName() {
+      const userAgent = navigator.userAgent;
+      if (/Windows NT 10.0/.test(userAgent)) return "Windows 10/11";
+      if (/Mac OS X|macOS/.test(userAgent)) return "macOS";
+      if (/iPhone|iPad|iPod/.test(userAgent)) return "iOS";
+      if (/Android/.test(userAgent)) return "Android";
+      if (/Linux/.test(userAgent)) return "Linux";
+      return "Unknown OS";
+    }
+
+    function getDeviceType() {
+      const userAgent = navigator.userAgent;
+      if (/Mobi|Android|iPhone|iPad/i.test(userAgent)) return "Mobile Device";
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return "Tablet";
+      return "Desktop Computer";
+    }
+
+    function getConnectionQuality() {
+      if (!('connection' in navigator)) return "Unknown";
+      const conn = navigator.connection;
+      const effectiveType = conn?.effectiveType || "unknown";
+      const speed = conn?.downlink ? `${conn.downlink} Mbps` : "";
+      return `${effectiveType.toUpperCase()}${speed ? ` (${speed})` : ""}`;
+    }
+
+    // Update the generateSummary function to use more detailed information
+    function generateSummary() {
+      const summary = document.createElement('div');
+      summary.className = 'system-summary';
+      summary.innerHTML = `
+        <div class="summary-card">
+          <h3>🔍 Quick System Overview</h3>
+          <ul style="list-style: none; padding: 0;">
+            <li>🌐 Browser: ${getBrowserName()} ${navigator.userAgent.match(/(?:Firefox|Chrome|Safari|Edge|OPR|Version|MSIE|rv:)[\s\/:](\d+(\.\d+)?)/i)?.[1] || ""}</li>
+            <li>💻 System: ${getOSName()} ${/x86_64|Win64|x64|amd64/.test(navigator.userAgent) ? "(64-bit)" : "(32-bit)"}</li>
+            <li>📱 Device: ${getDeviceType()} ${navigator.hardwareConcurrency ? `with ${navigator.hardwareConcurrency} CPU threads` : ""}</li>
+            <li>🖥️ Display: ${window.screen.width}x${window.screen.height} (${window.devicePixelRatio}x scaling)</li>
+            <li>📶 Network: ${getConnectionQuality()}</li>
+            <li>⚡ Performance: ${navigator.hardwareConcurrency > 4 ? "High" : "Standard"} Performance Device</li>
+          </ul>
+        </div>
+      `;
+      
+      document.getElementById('results').prepend(summary);
     }
 
     // Run system inspection when page loads
