@@ -19,20 +19,6 @@
       --accent: #3498db;
     }
 
-    [data-theme="dark"] {
-      --bg-color: #1a1a1a;
-      --text-color: #f0f0f0;
-      --card-bg: #2a2a2a;
-      --card-border: #444;
-      --header-bg: #2c3e50;
-      --header-text: #ecf0f1;
-      --section-bg: #34495e;
-      --section-text: #ecf0f1;
-      --detail-label: #bdc3c7;
-      --detail-value: #f0f0f0;
-      --accent: #3498db;
-    }
-
     * {
       margin: 0;
       padding: 0;
@@ -61,16 +47,6 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-
-    .theme-toggle {
-      background: transparent;
-      border: 2px solid var(--header-text);
-      color: var(--header-text);
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
     }
 
     .section {
@@ -210,7 +186,6 @@
   <div class="container">
     <div class="header">
       <h1>System Inspector</h1>
-      <button class="theme-toggle" id="themeToggle">Switch Theme</button>
     </div>
 
     <div id="results">
@@ -223,20 +198,6 @@
   </div>
 
   <script>
-    // Theme toggling
-    const themeToggle = document.getElementById('themeToggle');
-    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Set initial theme based on user preference
-    if (prefersDarkScheme.matches) {
-      document.body.setAttribute('data-theme', 'dark');
-    }
-    
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = document.body.getAttribute('data-theme');
-      document.body.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');
-    });
-
     // Update timestamp
     document.getElementById('timestamp').textContent = new Date().toLocaleString();
 
