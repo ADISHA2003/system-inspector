@@ -1,530 +1,1242 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>System Inspector — Enhanced</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Inspector Pro</title>
   <style>
-    :root{
-      --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#4f46e5; --accent-2:#06b6d4; --glass: rgba(255,255,255,0.04);
-      --radius:12px; --glass-2: rgba(255,255,255,0.02);
-      --text:#e6eef8; --soft:#cbd5e1;
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --accent-primary: #3b82f6;
+      --accent-secondary: #8b5cf6;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+      --border-color: #475569;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     }
-    [data-theme="light"]{ --bg:#f3f6fb; --card:#fff; --muted:#475569; --accent:#2563eb; --accent-2:#06b6d4; --glass: rgba(0,0,0,0.03); --glass-2: rgba(0,0,0,0.02); --text:#0b1220; --soft:#334155 }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;color:var(--text);background:linear-gradient(180deg,var(--bg),rgba(0,0,0,0.12));padding:20px}
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
 
-    .app{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    /* Sidebar */
-    .sidebar{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 6px 18px rgba(2,6,23,0.6);height:fit-content}
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white}
-    h1{font-size:16px;margin:0}
-    p.lead{margin:6px 0 12px;color:var(--muted);font-size:13px}
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 20px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
 
-    .controls{display:flex;flex-direction:column;gap:8px}
-    .btn{background:transparent;border:1px solid var(--glass);color:var(--text);padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
-    .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:white}
-    .row{display:flex;gap:8px}
-    .metric{padding:10px;border-radius:8px;background:linear-gradient(180deg,var(--glass),var(--glass-2));border:1px solid rgba(255,255,255,0.03);}
-    .small{font-size:12px;color:var(--muted)}
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
 
-    /* Main */
-    .main{display:flex;flex-direction:column;gap:14px}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-    .search{flex:1}
-    .search input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--glass);background:transparent;color:var(--text)}
+    .header {
+      background: var(--gradient-1);
+      padding: 30px;
+      border-radius: 16px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
 
-    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-    .card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.45);min-height:80px}
-    .card h3{margin:0 0 8px;font-size:13px}
-    .kv{display:flex;justify-content:space-between;align-items:center}
-    .kv .k{color:var(--muted);font-size:12px}
-    .kv .v{font-weight:600}
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: pulse 8s ease-in-out infinite;
+    }
 
-    .sections{display:grid;grid-template-columns:1fr;gap:12px}
-    .section{background:linear-gradient(180deg,var(--glass),transparent);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
-    .section .header{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-    .section .content{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
 
-    .detail{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px}
-    .detail .label{font-size:12px;color:var(--muted)}
-    .detail .value{font-weight:600;margin-top:6px}
+    .header-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
 
-    .footer{text-align:center;color:var(--muted);font-size:13px}
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 5px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
 
-    /* small screens */
-    @media (max-width:900px){.app{grid-template-columns:1fr}.sidebar{order:2}.main{order:1}}
+    .header-subtitle {
+      color: rgba(255,255,255,0.9);
+      font-size: 1rem;
+    }
 
-    /* subtle animations */
-    .fade{animation:fadeIn .5s ease both}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: white;
+      color: #667eea;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(255,255,255,0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .theme-toggle {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 20px;
+    }
+
+    .theme-toggle:hover {
+      background: rgba(255,255,255,0.3);
+      transform: rotate(180deg);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-1);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .summary-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px var(--shadow);
+      border-color: var(--accent-primary);
+    }
+
+    .summary-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .summary-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .summary-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .summary-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .summary-detail {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .search-filter-bar {
+      background: var(--bg-secondary);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 250px;
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .filter-select {
+      padding: 12px 16px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+
+    .sections-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .section.expanded {
+      box-shadow: 0 10px 40px var(--shadow);
+    }
+
+    .section-header {
+      background: var(--bg-secondary);
+      padding: 18px 24px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+
+    .section-header:hover {
+      background: var(--bg-card);
+    }
+
+    .section-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-1);
+      border-radius: 10px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+    }
+
+    .section-toggle {
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+      color: var(--text-muted);
+    }
+
+    .section.expanded .section-toggle {
+      transform: rotate(180deg);
+    }
+
+    .section-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .section.expanded .section-content {
+      max-height: 3000px;
+    }
+
+    .section-content-inner {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .detail {
+      background: var(--bg-secondary);
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-primary);
+      transition: all 0.3s ease;
+    }
+
+    .detail:hover {
+      transform: translateX(5px);
+      border-left-color: var(--accent-secondary);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detail-value {
+      color: var(--text-primary);
+      font-weight: 500;
+      font-size: 1rem;
+      word-break: break-word;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-success);
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--accent-warning);
+    }
+
+    .badge-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-danger);
+    }
+
+    .badge-info {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--accent-primary);
+    }
+
+    .tips-section {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 30px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tips-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tip-item {
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--accent-primary);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .tip-item:hover {
+      transform: translateX(5px);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .tip-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--text-muted);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-secondary);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gradient-1);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.8rem;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-content-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .search-filter-bar {
+        flex-direction: column;
+      }
+
+      .search-input {
+        width: 100%;
+      }
+    }
+
+    .tooltip {
+      position: relative;
+      cursor: help;
+    }
+
+    .tooltip-text {
+      visibility: hidden;
+      position: absolute;
+      z-index: 1000;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 12px var(--shadow);
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
   </style>
 </head>
-<body>
-  <div class="app" data-theme="dark">
-    <aside class="sidebar fade" aria-label="controls">
-      <div class="brand"><div class="logo">SI</div><div><h1>System Inspector</h1><p class="lead">Enhanced diagnostics & tips</p></div></div>
-
-      <div style="height:8px"></div>
-      <div class="controls">
-        <button class="btn primary" id="refreshBtn">🔄 Refresh</button>
-        <div class="row">
-          <button class="btn" id="exportJson">📥 Export JSON</button>
-          <button class="btn" id="copyBtn">📋 Copy</button>
+<body data-theme="dark">
+  <div class="container">
+    <div class="header">
+      <div class="header-content">
+        <div>
+          <h1>🔍 System Inspector Pro</h1>
+          <div class="header-subtitle">Comprehensive system analysis and diagnostics</div>
         </div>
-        <div class="row">
-          <button class="btn" id="themeToggle">🌙 Theme</button>
-          <button class="btn" id="runBench">🚀 Run Benchmark</button>
-        </div>
-        <div style="height:10px"></div>
-        <div class="metric"><div class="small">Last updated</div><div id="lastUpdated" style="font-weight:700;margin-top:6px">—</div></div>
-        <div class="metric" style="margin-top:8px"><div class="small">Quick Actions</div>
-          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pingTest">Ping Test</button><button class="btn" id="clearCache">Clear Storage</button></div>
+        <div class="header-controls">
+          <button class="btn btn-secondary" id="refreshBtn">
+            🔄 Refresh
+          </button>
+          <button class="btn btn-primary" id="exportBtn">
+            📥 Export Data
+          </button>
+          <button class="theme-toggle" id="themeToggle">🌙</button>
         </div>
       </div>
-    </aside>
+    </div>
 
-    <main class="main">
-      <div class="topbar">
-        <div class="search"><input id="searchInput" placeholder="Search properties (e.g. GPU, Battery, WebGL)..." /></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="card" style="min-width:220px;padding:10px"><div class="kv"><div><div class="small">Browser</div><div id="browserBrief" class="v">—</div></div><div style="text-align:right"><div class="small">Network</div><div id="connBrief" class="v">—</div></div></div></div>
-          <div class="card" style="min-width:140px;padding:10px"><div class="small">CPU Threads</div><div id="cpuThreads" style="font-weight:700">—</div></div>
-        </div>
-      </div>
+    <div class="summary-grid" id="summaryGrid"></div>
 
-      <div class="cards">
-        <div class="card fade"><h3>Quick Overview</h3><div class="kv"><div><div class="small">Device</div><div id="deviceBrief" class="v">—</div></div><div><div class="small">Screen</div><div id="screenBrief" class="v">—</div></div></div></div>
-        <div class="card fade"><h3>Performance</h3><div class="kv"><div><div class="small">Estimated</div><div id="perfBrief" class="v">—</div></div><div><div class="small">Memory</div><div id="memBrief" class="v">—</div></div></div></div>
-        <div class="card fade"><h3>Power</h3><div class="kv"><div><div class="small">Battery</div><div id="batteryBrief" class="v">—</div></div><div><div class="small">Charging</div><div id="chargingBrief" class="v">—</div></div></div></div>
-      </div>
+    <div class="search-filter-bar">
+      <input 
+        type="text" 
+        class="search-input" 
+        id="searchInput" 
+        placeholder="🔍 Search system information..."
+      >
+      <select class="filter-select" id="filterSelect">
+        <option value="all">All Sections</option>
+        <option value="supported">Supported Features Only</option>
+        <option value="unsupported">Unsupported Features Only</option>
+      </select>
+      <button class="btn btn-secondary" id="expandAllBtn">Expand All</button>
+      <button class="btn btn-secondary" id="collapseAllBtn">Collapse All</button>
+    </div>
 
-      <div class="sections">
-        <section class="section fade" id="section-browser">
-          <div class="header"><strong>Browser & Platform</strong><div class="small">Click to collapse</div></div>
-          <div class="content" id="content-browser"></div>
-        </section>
+    <div class="sections-grid" id="sectionsGrid"></div>
 
-        <section class="section fade" id="section-hardware">
-          <div class="header"><strong>Hardware & Memory</strong><div class="small">CPU / RAM / Threads</div></div>
-          <div class="content" id="content-hardware"></div>
-        </section>
+    <div class="tips-section" id="tipsSection"></div>
 
-        <section class="section fade" id="section-display">
-          <div class="header"><strong>Display & Graphics</strong><div class="small">WebGL / GPU info</div></div>
-          <div class="content" id="content-display"></div>
-        </section>
-
-        <section class="section fade" id="section-network">
-          <div class="header"><strong>Network & Resources</strong><div class="small">Connection / Timing / Ping</div></div>
-          <div class="content" id="content-network"></div>
-        </section>
-
-        <section class="section fade" id="section-media">
-          <div class="header"><strong>Media & Devices</strong><div class="small">Cameras / Microphones</div></div>
-          <div class="content" id="content-media"></div>
-        </section>
-
-        <section class="section fade" id="section-features">
-          <div class="header"><strong>Features & Capabilities</strong><div class="small">APIs supported</div></div>
-          <div class="content" id="content-features"></div>
-        </section>
-      </div>
-
-      <div class="footer">System Inspector — enhanced · <span id="timestamp">—</span></div>
-    </main>
+    <div class="footer">
+      <p>Last updated: <span id="timestamp"></span></p>
+      <p style="margin-top: 8px;">Made with ❤️ for system diagnostics and analysis</p>
+    </div>
   </div>
 
   <script>
-  (function(){
-    // Utility helpers
-    const $ = sel => document.querySelector(sel);
-    const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const now = () => new Date().toLocaleString();
+    // Theme Management
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    let currentTheme = 'dark';
 
-    // Scoped update helpers to avoid collision
-    function makeDetail(label, value){
-      return `<div class="detail"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+    themeToggle.addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      body.setAttribute('data-theme', currentTheme);
+      themeToggle.textContent = currentTheme === 'dark' ? '🌙' : '☀️';
+    });
+
+    // Utility Functions
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 
-    // Safe get with fallback
-    function safe(fn, fallback){try{return fn()}catch(e){return fallback}}
-
-    // Browser parsing once
-    function parseBrowser(){
-      const ua = navigator.userAgent || '';
-      let name = 'Unknown';
-      if(/Edg\//i.test(ua)) name='Edge';
-      else if(/OPR|Opera/i.test(ua)) name='Opera';
-      else if(/Chrome\//i.test(ua)) name='Chrome';
-      else if(/Firefox\//i.test(ua)) name='Firefox';
-      else if(/Safari\//i.test(ua)) name='Safari';
-      const ver = (ua.match(/(Edg|Chrome|Firefox|Version|Safari|OPR|MSIE|rv:)(?:\/|:| )(\d+(?:\.\d+)?)/i) || [,'', '']).pop();
-      return {name, version: ver||'' , ua};
+    function getPerformanceScore() {
+      const cpu = navigator.hardwareConcurrency || 2;
+      const memory = navigator.deviceMemory || 4;
+      const score = Math.min(100, (cpu * 10 + memory * 5));
+      return Math.round(score);
     }
 
-    // Async collectors
-    async function collectBrowser(){
-      const b = parseBrowser();
-      const arr = [];
-      arr.push({label:'Browser', value: `${b.name} ${b.version}`});
-      arr.push({label:'User Agent', value: b.ua});
-      arr.push({label:'Language', value: navigator.language || '—'});
-      arr.push({label:'Cookies Enabled', value: navigator.cookieEnabled ? 'Yes' : 'No'});
-      arr.push({label:'Do Not Track', value: navigator.doNotTrack || 'unspecified'});
-      if(navigator.languages) arr.push({label:'Languages', value: navigator.languages.join(', ')});
-      return arr;
+    function getBadgeClass(value, type = 'generic') {
+      if (type === 'support') {
+        return value.includes('Supported') || value.includes('Yes') ? 'badge-success' : 'badge-danger';
+      }
+      if (type === 'connection') {
+        if (value.includes('4g') || value.includes('wifi')) return 'badge-success';
+        if (value.includes('3g')) return 'badge-warning';
+        return 'badge-danger';
+      }
+      return 'badge-info';
     }
 
-    async function collectSystem(){
-      const ua = navigator.userAgent || '';
-      let os='Unknown';
-      if(/Windows NT 10.0/.test(ua)) os='Windows 10/11';
-      else if(/Windows NT 6.3/.test(ua)) os='Windows 8.1';
-      else if(/Mac OS X|macOS/.test(ua)) os='macOS';
-      else if(/Android/.test(ua)) os='Android';
-      else if(/iPhone|iPad|iPod/.test(ua)) os='iOS';
-      else if(/Linux/.test(ua)) os='Linux';
+    // Data Collection Functions
+    function getBrowserDetails() {
+      const ua = navigator.userAgent;
+      let browserName = "Unknown", version = "";
+      
+      if (/Edg/.test(ua)) browserName = "Edge";
+      else if (/Firefox/.test(ua)) browserName = "Firefox";
+      else if (/Chrome/.test(ua)) browserName = "Chrome";
+      else if (/Safari/.test(ua)) browserName = "Safari";
+      else if (/Opera|OPR/.test(ua)) browserName = "Opera";
+      
+      const versionMatch = ua.match(/(Firefox|Chrome|Safari|Edge|OPR|Version)[\s\/:](\d+)/i);
+      version = versionMatch ? versionMatch[2] : "";
+      
+      return [
+        { label: "Browser", value: `${browserName} ${version}` },
+        { label: "User Agent", value: ua },
+        { label: "Language", value: navigator.language },
+        { label: "Languages", value: navigator.languages.join(", ") },
+        { label: "Cookies", value: navigator.cookieEnabled ? "Enabled" : "Disabled" },
+        { label: "Do Not Track", value: navigator.doNotTrack || "Not Set" },
+        { label: "Online", value: navigator.onLine ? "Yes" : "No" },
+        { label: "Vendor", value: navigator.vendor || "Unknown" }
+      ];
+    }
 
-      const details = [];
-      details.push({label:'Operating System', value: os});
-      details.push({label:'Platform', value: navigator.platform || '—'});
-
+    function getSystemDetails() {
+      const ua = navigator.userAgent;
+      const platform = navigator.platform;
+      let osName = "Unknown OS";
+      
+      if (/Windows NT 10.0/.test(ua)) osName = "Windows 10/11";
+      else if (/Mac OS X/.test(ua)) osName = "macOS";
+      else if (/iPhone|iPad/.test(ua)) osName = "iOS";
+      else if (/Android/.test(ua)) osName = "Android";
+      else if (/Linux/.test(ua)) osName = "Linux";
+      
       const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
-      details.push({label:'Device Type', value: isMobile ? 'Mobile' : 'Desktop'});
+      const deviceType = isMobile ? "Mobile" : "Desktop";
+      const arch = /x86_64|Win64|x64/.test(ua) ? "64-bit" : "32-bit";
+      
+      return [
+        { label: "Operating System", value: osName },
+        { label: "Platform", value: platform },
+        { label: "Device Type", value: deviceType },
+        { label: "Architecture", value: arch },
+        { label: "CPU Cores", value: navigator.hardwareConcurrency || "Unknown" },
+        { label: "Device Memory", value: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "Unknown" },
+        { label: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        { label: "Dark Mode", value: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Enabled" : "Disabled" },
+        { label: "Reduced Motion", value: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? "Enabled" : "Disabled" },
+        { label: "Performance Score", value: `${getPerformanceScore()}/100` }
+      ];
+    }
 
-      const arch = /x86_64|Win64|x64|amd64/.test(ua) ? '64-bit' : '32-bit';
-      details.push({label:'Architecture', value: arch});
-      details.push({label:'Date & Time', value: now()});
-      details.push({label:'Timezone', value: Intl.DateTimeFormat().resolvedOptions().timeZone || '—'});
-
-      if('hardwareConcurrency' in navigator) details.push({label:'CPU Threads', value: navigator.hardwareConcurrency});
-      if('deviceMemory' in navigator) details.push({label:'Device Memory', value: navigator.deviceMemory + ' GB'});
-
-      details.push({label:'Dark Mode', value: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Enabled' : 'Disabled'});
-      details.push({label:'Reduced Motion', value: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Enabled' : 'Disabled'});
-
-      // Estimated performance
-      const cpuPerf = (navigator.hardwareConcurrency || 2) > 4 ? 'High' : 'Standard';
-      const memPerf = (navigator.deviceMemory || 4) > 4 ? 'High' : 'Standard';
-      details.push({label:'Estimated Performance', value:`${cpuPerf} (${memPerf} memory)`});
+    function getDisplayDetails() {
+      const details = [
+        { label: "Screen Resolution", value: `${screen.width} × ${screen.height}` },
+        { label: "Available Screen", value: `${screen.availWidth} × ${screen.availHeight}` },
+        { label: "Window Size", value: `${window.innerWidth} × ${window.innerHeight}` },
+        { label: "Pixel Ratio", value: window.devicePixelRatio },
+        { label: "Color Depth", value: `${screen.colorDepth} bits` },
+        { label: "Pixel Depth", value: `${screen.pixelDepth} bits` },
+        { label: "Orientation", value: screen.orientation ? screen.orientation.type : "Unknown" }
+      ];
+      
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        
+        if (gl) {
+          const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+          if (debugInfo) {
+            details.push(
+              { label: "GPU Vendor", value: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) },
+              { label: "GPU Renderer", value: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) }
+            );
+          }
+          details.push(
+            { label: "WebGL Version", value: gl.getParameter(gl.VERSION) },
+            { label: "GLSL Version", value: gl.getParameter(gl.SHADING_LANGUAGE_VERSION) },
+            { label: "Max Texture Size", value: `${gl.getParameter(gl.MAX_TEXTURE_SIZE)}px` },
+            { label: "Max Viewport Dims", value: gl.getParameter(gl.MAX_VIEWPORT_DIMS).join(" × ") }
+          );
+        }
+      } catch (e) {
+        details.push({ label: "WebGL", value: "Not Available" });
+      }
+      
       return details;
     }
 
-    async function collectDisplay(){
-      const arr=[];
-      arr.push({label:'Screen Resolution', value:`${window.screen.width}x${window.screen.height}`});
-      arr.push({label:'Window Size', value:`${window.innerWidth}x${window.innerHeight}`});
-      arr.push({label:'Pixel Ratio', value: window.devicePixelRatio});
-
-      // WebGL/WebGL2/WebGPU detection and GPU info
-      try{
-        const canvas = document.createElement('canvas');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        const gl2 = canvas.getContext('webgl2');
-        if(gl){
-          const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-          if(dbg){
-            arr.push({label:'GPU Vendor', value: gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)});
-            arr.push({label:'GPU Renderer', value: gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)});
-          } else {
-            arr.push({label:'GPU', value:'WebGL available (details restricted)'});
-          }
-          arr.push({label:'WebGL Version', value: gl.getParameter(gl.VERSION)});
-          arr.push({label:'Max Texture Size', value: gl.getParameter(gl.MAX_TEXTURE_SIZE) + ' px'});
-        } else if(gl2){
-          arr.push({label:'WebGL2', value: 'Supported'});
-        } else {
-          arr.push({label:'WebGL', value: 'Not supported'});
-        }
-
-        // WebGPU detection (experimental)
-        if('gpu' in navigator){
-          try{
-            arr.push({label:'WebGPU', value:'Available (experimental)'});
-          }catch(e){arr.push({label:'WebGPU', value:'Detected but cannot query'})}
-        } else {
-          arr.push({label:'WebGPU', value:'Not detected'});
-        }
-      }catch(e){arr.push({label:'GPU Information', value:'Could not detect'})}
-
-      return arr;
-    }
-
-    async function collectNetwork(){
-      const arr=[];
-      const conn = navigator.connection || {};
-      arr.push({label:'Connection Type', value: conn.effectiveType || 'Unknown'});
-      arr.push({label:'Downlink', value: conn.downlink ? conn.downlink + ' Mbps' : '—'});
-      arr.push({label:'RTT', value: conn.rtt ? conn.rtt + ' ms' : '—'});
-      arr.push({label:'Save-Data', value: conn.saveData ? 'Enabled' : 'Disabled'});
-      arr.push({label:'Online', value: navigator.onLine ? 'Online' : 'Offline'});
-
-      // Resource timing summary
-      try{
-        const resources = performance.getEntriesByType('resource') || [];
-        const total = resources.reduce((s,r)=>s+(r.transferSize||0),0);
-        arr.push({label:'Resources Loaded', value:`${resources.length} (${Math.round(total/1024)} KB)`});
-      }catch(e){/*ignore*/}
-
-      // network quality placeholder updated by listener
-      if(conn && typeof conn.addEventListener === 'function'){
-        const update = () => {
-          const el = document.querySelector('[data-network-quality]');
-          if(el) el.textContent = `${conn.effectiveType || 'unknown'} ${conn.downlink?`(${conn.downlink} Mbps)`:''}`;
-        };
-        conn.addEventListener('change', update);
-        arr.push({label:'Network Quality', value:`<span data-network-quality>${conn.effectiveType || 'Monitoring...'}</span>`});
-      }
-
-      return arr;
-    }
-
-    async function collectStorageAndPower(){
-      const arr=[];
-      // Performance timings
-      try{
-        const nav = performance.getEntriesByType('navigation')[0] || performance.timing || null;
-        if(nav){
-          const load = (nav.loadEventEnd && nav.startTime) ? Math.max(0,Math.round(nav.loadEventEnd - nav.startTime)) : '—';
-          arr.push({label:'Page Load Time', value: typeof load === 'number' ? load + ' ms' : '—'});
-        }
-      }catch(e){}
-
-      // Storage estimate
-      if(navigator.storage && navigator.storage.estimate){
-        arr.push({label:'Storage Usage', value:'<span data-storage-usage>Calculating...</span>'});
-        navigator.storage.estimate().then(est=>{
-          const used = Math.round((est.usage||0)/(1024*1024));
-          const quota = Math.round((est.quota||0)/(1024*1024));
-          const percent = quota?Math.round((used/quota)*100):0;
-          const el = document.querySelector('[data-storage-usage]');
-          if(el) el.textContent = `${used} MB / ${quota} MB (${percent}%)`;
-        }).catch(()=>{});
-      }
-
-      // Battery
-      if('getBattery' in navigator){
-        arr.push({label:'Battery', value:'<span data-battery>Checking...</span>'});
-        navigator.getBattery().then(bat=>{
-          const update = ()=>{
-            const el = document.querySelector('[data-battery]');
-            if(!el) return;
-            el.textContent = `${Math.round(bat.level*100)}% ${bat.charging? '(Charging)':''}`;
-          };
-          bat.addEventListener('levelchange', update);
-          bat.addEventListener('chargingchange', update);
-          update();
-        }).catch(()=>{
-          const el = document.querySelector('[data-battery]'); if(el) el.textContent='Unavailable';
-        });
-      } else {
-        arr.push({label:'Battery', value:'Not supported'});
-      }
-
-      return arr;
-    }
-
-    async function collectMedia(){
-      const arr=[];
-      arr.push({label:'Media Support', value: ('mediaDevices' in navigator) ? 'Available' : 'Not available'});
-      if(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices){
-        arr.push({label:'Media Devices', value: '<span data-media>Detecting...</span>'});
-        navigator.mediaDevices.enumerateDevices().then(devs=>{
-          const cams = devs.filter(d=>d.kind==='videoinput').length;
-          const mics = devs.filter(d=>d.kind==='audioinput').length;
-          const outs = devs.filter(d=>d.kind==='audiooutput').length;
-          const el = document.querySelector('[data-media]'); if(el) el.textContent = `Cameras: ${cams}, Microphones: ${mics}, Speakers: ${outs}`;
-        }).catch(err=>{const el=document.querySelector('[data-media]'); if(el) el.textContent='Permission denied or none';});
-      }
-      return arr;
-    }
-
-    async function collectFeatures(){
-      const feats = [
-        ['Geolocation','geolocation' in navigator],
-        ['Camera/Microphone','mediaDevices' in navigator],
-        ['Web Bluetooth','bluetooth' in navigator],
-        ['Vibration','vibrate' in navigator],
-        ['Push Notifications','PushManager' in window],
-        ['Speech Recognition','SpeechRecognition' in window || 'webkitSpeechRecognition' in window],
-        ['Speech Synthesis','speechSynthesis' in window],
-        ['Web Share','share' in navigator],
-        ['Gamepad API','getGamepads' in navigator],
-        ['Web Payments','PaymentRequest' in window],
-        ['WebGL', !!document.createElement('canvas').getContext('webgl')],
-        ['WebGL2', !!document.createElement('canvas').getContext('webgl2')],
-        ['WebAssembly', typeof WebAssembly === 'object'],
-        ['Service Workers','serviceWorker' in navigator],
-        ['Web Workers', typeof Worker === 'function'],
-        ['Clipboard API', navigator.clipboard && 'writeText' in navigator.clipboard]
+    function getNetworkDetails() {
+      const details = [
+        { label: "Online Status", value: navigator.onLine ? "Online" : "Offline" }
       ];
-      return feats.map(f=>({label:f[0], value: f[1] ? 'Supported' : 'Not Supported'}));
+      
+      if ('connection' in navigator) {
+        const conn = navigator.connection;
+        details.push(
+          { label: "Effective Type", value: conn.effectiveType || "Unknown" },
+          { label: "Downlink", value: conn.downlink ? `${conn.downlink} Mbps` : "Unknown" },
+          { label: "RTT", value: conn.rtt ? `${conn.rtt} ms` : "Unknown" },
+          { label: "Save Data", value: conn.saveData ? "Enabled" : "Disabled" },
+          { label: "Type", value: conn.type || "Unknown" }
+        );
+      }
+      
+      return details;
     }
 
-    // Render helpers
-    function renderSection(containerId, items){
-      const el = document.getElementById(containerId);
-      if(!el) return;
-      el.innerHTML = items.map(i => makeDetail(i.label, i.value)).join('');
+    function getFeatureDetails() {
+      const features = [
+        { name: "Geolocation", test: 'geolocation' in navigator },
+        { name: "Camera/Microphone", test: 'mediaDevices' in navigator },
+        { name: "Web Bluetooth", test: 'bluetooth' in navigator },
+        { name: "Vibration", test: 'vibrate' in navigator },
+        { name: "Push Notifications", test: 'PushManager' in window },
+        { name: "Speech Recognition", test: 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window },
+        { name: "Speech Synthesis", test: 'speechSynthesis' in window },
+        { name: "Web Share", test: 'share' in navigator },
+        { name: "Gamepad API", test: 'getGamepads' in navigator },
+        { name: "Web Payments", test: 'PaymentRequest' in window },
+        { name: "WebGL", test: !!document.createElement('canvas').getContext('webgl') },
+        { name: "WebGL 2", test: !!document.createElement('canvas').getContext('webgl2') },
+        { name: "WebAssembly", test: typeof WebAssembly === 'object' },
+        { name: "Service Workers", test: 'serviceWorker' in navigator },
+        { name: "Web Workers", test: typeof Worker === 'function' },
+        { name: "Clipboard API", test: 'clipboard' in navigator },
+        { name: "Battery API", test: 'getBattery' in navigator },
+        { name: "USB API", test: 'usb' in navigator },
+        { name: "WebXR", test: 'xr' in navigator },
+        { name: "WebRTC", test: 'RTCPeerConnection' in window },
+        { name: "IndexedDB", test: 'indexedDB' in window },
+        { name: "WebSockets", test: 'WebSocket' in window },
+        { name: "File API", test: 'File' in window },
+        { name: "Drag & Drop", test: 'draggable' in document.createElement('div') }
+      ];
+      
+      return features.map(f => ({
+        label: f.name,
+        value: f.test ? "✅ Supported" : "❌ Not Supported"
+      }));
     }
 
-    // summary updates
-    function updateBriefs(){
-      const b = parseBrowser();
-      $('#browserBrief').textContent = `${b.name} ${b.version}`;
-      $('#cpuThreads').textContent = navigator.hardwareConcurrency || '—';
-      $('#deviceBrief').textContent = `${/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'Mobile':'Desktop'} · ${navigator.platform||''}`;
-      $('#screenBrief').textContent = `${window.screen.width}x${window.screen.height} @ ${window.devicePixelRatio}x`;
-      $('#lastUpdated').textContent = now();
-      $('#timestamp').textContent = now();
-
-      // memory
-      $('#memBrief').textContent = (navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Unknown');
-
-      // perf
-      $('#perfBrief').textContent = (navigator.hardwareConcurrency && navigator.hardwareConcurrency > 4) ? 'High' : 'Standard';
-
-      // battery quick
-      const batteryEl = document.querySelector('[data-battery]');
-      $('#batteryBrief').textContent = batteryEl ? batteryEl.textContent : '—';
-      $('#chargingBrief').textContent = batteryEl && batteryEl.textContent.includes('Charging')? 'Yes':'No';
-
-      // network
-      const conn = navigator.connection || {};
-      $('#connBrief').textContent = `${(conn.effectiveType||'unknown').toUpperCase()} ${conn.downlink?`(${conn.downlink} Mbps)`:''}`;
+    function getStorageDetails() {
+      const details = [];
+      
+      try {
+        details.push({ label: "localStorage", value: typeof localStorage !== 'undefined' ? "Available" : "Not Available" });
+        details.push({ label: "sessionStorage", value: typeof sessionStorage !== 'undefined' ? "Available" : "Not Available" });
+        details.push({ label: "IndexedDB", value: typeof indexedDB !== 'undefined' ? "Available" : "Not Available" });
+      } catch (e) {
+        details.push({ label: "Storage Access", value: "Blocked" });
+      }
+      
+      if (performance.timing) {
+        const t = performance.timing;
+        details.push(
+          { label: "Page Load Time", value: `${t.loadEventEnd - t.navigationStart} ms` },
+          { label: "DOM Ready", value: `${t.domContentLoadedEventEnd - t.navigationStart} ms` },
+          { label: "DNS Lookup", value: `${t.domainLookupEnd - t.domainLookupStart} ms` },
+          { label: "TCP Connection", value: `${t.connectEnd - t.connectStart} ms` }
+        );
+      }
+      
+      return details;
     }
 
-    // Ping test (simple fetch to a known endpoint)
-    async function pingTest(url='https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',count=4){
-      const results=[];
-      for(let i=0;i<count;i++){
-        const t0 = performance.now();
-        try{
-          const resp = await fetch(url, {cache:'no-store', mode:'no-cors'});
-          const t1 = performance.now();
-          results.push(Math.round(t1-t0));
-        }catch(e){
-          // mode no-cors prevents reading response but timing still works in many browsers
-          const t1 = performance.now(); results.push(Math.round(t1-t0));
+    // Generate Summary Cards
+    function generateSummaryCards() {
+      const ua = navigator.userAgent;
+      let browserName = "Unknown";
+      if (/Edg/.test(ua)) browserName = "Edge";
+      else if (/Firefox/.test(ua)) browserName = "Firefox";
+      else if (/Chrome/.test(ua)) browserName = "Chrome";
+      else if (/Safari/.test(ua)) browserName = "Safari";
+      
+      let osName = "Unknown";
+      if (/Windows/.test(ua)) osName = "Windows";
+      else if (/Mac/.test(ua)) osName = "macOS";
+      else if (/Android/.test(ua)) osName = "Android";
+      else if (/Linux/.test(ua)) osName = "Linux";
+      
+      const cards = [
+        {
+          icon: '🌐',
+          label: 'Browser',
+          value: browserName,
+          detail: navigator.userAgent.match(/(?:Firefox|Chrome|Safari|Edge)[\s\/:](\d+)/i)?.[1] || 'Unknown'
+        },
+        {
+          icon: '💻',
+          label: 'System',
+          value: osName,
+          detail: navigator.platform
+        },
+        {
+          icon: '🖥️',
+          label: 'Display',
+          value: `${screen.width}×${screen.height}`,
+          detail: `${window.devicePixelRatio}x Pixel Ratio`
+        },
+        {
+          icon: '⚡',
+          label: 'Performance',
+          value: `${getPerformanceScore()}/100`,
+          detail: `${navigator.hardwareConcurrency || 2} CPU cores`
+        },
+        {
+          icon: '📶',
+          label: 'Connection',
+          value: navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'Unknown',
+          detail: navigator.onLine ? 'Online' : 'Offline'
+        },
+        {
+          icon: '💾',
+          label: 'Memory',
+          value: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Unknown',
+          detail: 'Device RAM'
+        }
+      ];
+      
+      const summaryGrid = document.getElementById('summaryGrid');
+      summaryGrid.innerHTML = cards.map(card => `
+        <div class="summary-card">
+          <span class="summary-icon">${card.icon}</span>
+          <div class="summary-label">${card.label}</div>
+          <div class="summary-value">${card.value}</div>
+          <div class="summary-detail">${card.detail}</div>
+        </div>
+      `).join('');
+    }
+
+    // Generate Sections
+    function generateSections() {
+      const sections = [
+        {
+          id: 'browser',
+          icon: '🌐',
+          title: 'Browser Information',
+          details: getBrowserDetails()
+        },
+        {
+          id: 'system',
+          icon: '💻',
+          title: 'System Information',
+          details: getSystemDetails()
+        },
+        {
+          id: 'display',
+          icon: '🖥️',
+          title: 'Display & Graphics',
+          details: getDisplayDetails()
+        },
+        {
+          id: 'network',
+          icon: '📶',
+          title: 'Network Information',
+          details: getNetworkDetails()
+        },
+        {
+          id: 'features',
+          icon: '✨',
+          title: 'Browser Features & Capabilities',
+          details: getFeatureDetails()
+        },
+        {
+          id: 'storage',
+          icon: '💾',
+          title: 'Storage & Performance',
+          details: getStorageDetails()
+        }
+      ];
+      
+      const sectionsGrid = document.getElementById('sectionsGrid');
+      sectionsGrid.innerHTML = sections.map(section => `
+        <div class="section" data-section="${section.id}">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon">${section.icon}</div>
+              <div class="section-title">${section.title}</div>
+            </div>
+            <div class="section-toggle">▼</div>
+          </div>
+          <div class="section-content">
+            <div class="section-content-inner">
+              ${section.details.map(detail => `
+                <div class="detail" data-label="${detail.label}" data-value="${detail.value}">
+                  <div class="detail-label">
+                    ${detail.label}
+                    ${detail.label.includes('RTT') || detail.label.includes('WebGL') || detail.label.includes('CPU') ? 
+                      `<span class="tooltip">ℹ️<span class="tooltip-text">${getTooltip(detail.label)}</span></span>` : ''}
+                  </div>
+                  <div class="detail-value">
+                    ${detail.value.includes('Supported') || detail.value.includes('Not Supported') ? 
+                      `<span class="badge ${getBadgeClass(detail.value, 'support')}">${detail.value}</span>` : 
+                      detail.value}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      // Add click handlers for sections
+      document.querySelectorAll('.section-header').forEach(header => {
+        header.addEventListener('click', () => {
+          header.parentElement.classList.toggle('expanded');
+        });
+      });
+    }
+
+    function getTooltip(label) {
+      const tooltips = {
+        'RTT': 'Round Trip Time - latency between your device and server',
+        'WebGL': 'Web Graphics Library for 3D graphics',
+        'WebGL 2': 'Enhanced version of WebGL with more features',
+        'CPU Cores': 'Number of processing threads available',
+        'GPU': 'Graphics Processing Unit for visual rendering',
+        'WebAssembly': 'High-performance code execution in browsers',
+        'Service Workers': 'Enables offline functionality and caching'
+      };
+      return tooltips[label] || 'System information';
+    }
+
+    // Generate Tips
+    function generateTips() {
+      const tips = [];
+      const cpu = navigator.hardwareConcurrency || 2;
+      const memory = navigator.deviceMemory || 4;
+      const score = getPerformanceScore();
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const hasGoodConnection = navigator.connection?.effectiveType === '4g';
+      
+      if (score >= 70) {
+        tips.push({ icon: '✅', text: 'Excellent system performance! Your device handles demanding tasks well.' });
+      } else if (score >= 50) {
+        tips.push({ icon: '⚠️', text: 'Good performance. Consider closing background tabs for better speed.' });
+      } else {
+        tips.push({ icon: '⚠️', text: 'Limited performance detected. Keep fewer applications running simultaneously.' });
+      }
+      
+      if (window.devicePixelRatio > 1) {
+        tips.push({ icon: '✅', text: 'High-resolution display detected. Enjoy crisp, clear visuals!' });
+      }
+      
+      if (hasGoodConnection) {
+        tips.push({ icon: '✅', text: 'Fast connection! Perfect for HD streaming and large downloads.' });
+      } else if (navigator.connection) {
+        tips.push({ icon: '⚠️', text: 'Slower connection detected. Consider using data-saving modes for videos.' });
+      }
+      
+      if ('serviceWorker' in navigator) {
+        tips.push({ icon: '✅', text: 'Service Workers supported! Web apps can work offline on your device.' });
+      }
+      
+      if (memory < 4) {
+        tips.push({ icon: '💡', text: 'Limited RAM. Try keeping fewer browser tabs open for optimal performance.' });
+      }
+      
+      tips.push({ 
+        icon: isDark ? '🌙' : '☀️', 
+        text: `${isDark ? 'Dark' : 'Light'} mode active - ${isDark ? 'easier on your eyes at night' : 'great for daytime viewing'}.` 
+      });
+      
+      const webglSupported = !!document.createElement('canvas').getContext('webgl');
+      if (webglSupported) {
+        tips.push({ icon: '🎮', text: 'WebGL enabled! Your browser supports 3D graphics and games.' });
+      }
+      
+      const tipsSection = document.getElementById('tipsSection');
+      tipsSection.innerHTML = `
+        <div class="tips-title">💡 Personalized Tips & Insights</div>
+        ${tips.map(tip => `
+          <div class="tip-item">
+            <div class="tip-icon">${tip.icon}</div>
+            <div>${tip.text}</div>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    // Search Functionality
+    function setupSearch() {
+      const searchInput = document.getElementById('searchInput');
+      const filterSelect = document.getElementById('filterSelect');
+      
+      function performSearch() {
+        const query = searchInput.value.toLowerCase();
+        const filter = filterSelect.value;
+        
+        document.querySelectorAll('.detail').forEach(detail => {
+          const label = detail.dataset.label.toLowerCase();
+          const value = detail.dataset.value.toLowerCase();
+          const matchesSearch = label.includes(query) || value.includes(query);
+          
+          let matchesFilter = true;
+          if (filter === 'supported') {
+            matchesFilter = value.includes('supported') || value.includes('yes') || value.includes('enabled') || value.includes('available');
+          } else if (filter === 'unsupported') {
+            matchesFilter = value.includes('not supported') || value.includes('no') || value.includes('disabled') || value.includes('unknown');
+          }
+          
+          detail.style.display = (matchesSearch && matchesFilter) ? 'block' : 'none';
+        });
+        
+        // Hide empty sections
+        document.querySelectorAll('.section').forEach(section => {
+          const visibleDetails = section.querySelectorAll('.detail[style="display: block;"], .detail:not([style*="display: none"])');
+          section.style.display = visibleDetails.length > 0 ? 'block' : 'none';
+        });
+      }
+      
+      searchInput.addEventListener('input', performSearch);
+      filterSelect.addEventListener('change', performSearch);
+    }
+
+    // Expand/Collapse All
+    function setupExpandCollapse() {
+      const expandBtn = document.getElementById('expandAllBtn');
+      const collapseBtn = document.getElementById('collapseAllBtn');
+      
+      expandBtn.addEventListener('click', () => {
+        document.querySelectorAll('.section').forEach(section => {
+          section.classList.add('expanded');
+        });
+      });
+      
+      collapseBtn.addEventListener('click', () => {
+        document.querySelectorAll('.section').forEach(section => {
+          section.classList.remove('expanded');
+        });
+      });
+    }
+
+    // Export Functionality
+    function setupExport() {
+      const exportBtn = document.getElementById('exportBtn');
+      
+      exportBtn.addEventListener('click', () => {
+        const data = {
+          timestamp: new Date().toISOString(),
+          browser: getBrowserDetails(),
+          system: getSystemDetails(),
+          display: getDisplayDetails(),
+          network: getNetworkDetails(),
+          features: getFeatureDetails(),
+          storage: getStorageDetails(),
+          performanceScore: getPerformanceScore()
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `system-report-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    // Refresh Functionality
+    function setupRefresh() {
+      const refreshBtn = document.getElementById('refreshBtn');
+      
+      refreshBtn.addEventListener('click', () => {
+        refreshBtn.innerHTML = '<span class="loading-spinner"></span> Refreshing...';
+        refreshBtn.disabled = true;
+        
+        setTimeout(() => {
+          initializeApp();
+          refreshBtn.innerHTML = '🔄 Refresh';
+          refreshBtn.disabled = false;
+        }, 500);
+      });
+    }
+
+    // Storage Usage Monitoring
+    async function monitorStorage() {
+      if ('storage' in navigator && navigator.storage.estimate) {
+        try {
+          const estimate = await navigator.storage.estimate();
+          const usedMB = Math.round(estimate.usage / (1024 * 1024));
+          const quotaMB = Math.round(estimate.quota / (1024 * 1024));
+          const percentUsed = Math.round((estimate.usage / estimate.quota) * 100);
+          
+          const storageElements = document.querySelectorAll('[data-value*="Calculating"]');
+          storageElements.forEach(el => {
+            if (el.textContent.includes('Storage')) {
+              el.innerHTML = `
+                ${usedMB} MB / ${quotaMB} MB
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${percentUsed}%"></div>
+                </div>
+              `;
+            }
+          });
+        } catch (e) {
+          console.log('Storage API not available');
         }
       }
-      const avg = Math.round(results.reduce((a,b)=>a+b,0)/results.length);
-      return {rtts:results, avg};
     }
 
-    // Simple CPU benchmark: busy loop doing math
-    async function runCpuBench(iterations=40){
-      const results=[];
-      for(let p=0;p<iterations;p++){
-        const t0=performance.now();
-        // small math workload
-        let x=0;
-        for(let i=0;i<200000;i++) x += Math.sqrt(i+Math.random());
-        const t1 = performance.now();
-        results.push(t1-t0);
-        // yield to UI occasionally
-        if(p%5===0) await new Promise(r=>setTimeout(r,20));
+    // Battery Monitoring
+    async function monitorBattery() {
+      if ('getBattery' in navigator) {
+        try {
+          const battery = await navigator.getBattery();
+          
+          const updateBattery = () => {
+            const level = Math.round(battery.level * 100);
+            const charging = battery.charging;
+            const batteryElements = document.querySelectorAll('[data-value*="Battery"]');
+            
+            batteryElements.forEach(el => {
+              const icon = charging ? '🔌' : level > 50 ? '🔋' : level > 20 ? '🪫' : '⚠️';
+              el.innerHTML = `
+                <span class="badge ${level > 50 ? 'badge-success' : level > 20 ? 'badge-warning' : 'badge-danger'}">
+                  ${icon} ${level}% ${charging ? '(Charging)' : ''}
+                </span>
+              `;
+            });
+          };
+          
+          battery.addEventListener('levelchange', updateBattery);
+          battery.addEventListener('chargingchange', updateBattery);
+          updateBattery();
+        } catch (e) {
+          console.log('Battery API not available');
+        }
       }
-      const avg = Math.round(results.reduce((a,b)=>a+b,0)/results.length);
-      return {samples:results, avg};
     }
 
-    // Export utilities
-    function gatherAll(){
-      return Promise.all([collectBrowser(), collectSystem(), collectDisplay(), collectNetwork(), collectStorageAndPower(), collectMedia(), collectFeatures()])
-        .then(([b,s,d,n,sp,m,f])=>({browser:b, system:s, display:d, network:n, storageAndPower:sp, media:m, features:f, timestamp: new Date().toISOString()}));
-    }
-
-    async function refreshAll(){
-      // Collect and render
-      const [b,s,d,n,sp,m,f] = await Promise.all([collectBrowser(), collectSystem(), collectDisplay(), collectNetwork(), collectStorageAndPower(), collectMedia(), collectFeatures()]);
-      renderSection('content-browser', b);
-      renderSection('content-hardware', s);
-      renderSection('content-display', d);
-      renderSection('content-network', n.concat(sp));
-      renderSection('content-media', m);
-      renderSection('content-features', f);
-      updateBriefs();
-    }
-
-    // Event wiring
-    $('#refreshBtn').addEventListener('click', ()=>{refreshAll();});
-
-    let theme = 'dark';
-    function applyTheme(){
-      document.querySelector('.app').setAttribute('data-theme', theme==='dark'?'dark':'light');
-      $('#themeToggle').textContent = theme==='dark' ? '🌙 Theme' : '☀️ Theme';
-    }
-    $('#themeToggle').addEventListener('click', ()=>{theme = theme==='dark'?'light':'dark'; applyTheme();});
-
-    $('#exportJson').addEventListener('click', async ()=>{
-      const data = await gatherAll();
-      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='system-inspector.json'; a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    $('#copyBtn').addEventListener('click', async ()=>{
-      const data = await gatherAll();
-      const text = JSON.stringify(data, null, 2);
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard')) .catch(()=>prompt('Copy the JSON below', text));
-      } else {
-        prompt('Copy the JSON below', text);
+    // Media Devices Detection
+    async function detectMediaDevices() {
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter(d => d.kind === 'videoinput').length;
+          const microphones = devices.filter(d => d.kind === 'audioinput').length;
+          const speakers = devices.filter(d => d.kind === 'audiooutput').length;
+          
+          // This would update if we had a media devices section
+          console.log(`Detected: ${cameras} cameras, ${microphones} mics, ${speakers} speakers`);
+        } catch (e) {
+          console.log('Media devices detection failed');
+        }
       }
-    });
+    }
 
-    $('#pingTest').addEventListener('click', async ()=>{
-      const btn = $('#pingTest'); btn.textContent='Pinging...'; btn.disabled=true;
-      try{
-        const res = await pingTest();
-        alert('Ping RTTs: ' + res.rtts.join(', ') + ' ms \\nAverage: ' + res.avg + ' ms');
-      }catch(e){alert('Ping failed: '+ e.message)}
-      btn.textContent='Ping Test'; btn.disabled=false;
-    });
+    // Network Quality Monitoring
+    function monitorNetworkQuality() {
+      if ('connection' in navigator) {
+        const updateNetworkQuality = () => {
+          const conn = navigator.connection;
+          const quality = conn.effectiveType;
+          const downlink = conn.downlink;
+          const rtt = conn.rtt;
+          
+          console.log(`Network: ${quality}, ${downlink} Mbps, ${rtt}ms RTT`);
+        };
+        
+        navigator.connection.addEventListener('change', updateNetworkQuality);
+        updateNetworkQuality();
+      }
+    }
 
-    $('#runBench').addEventListener('click', async ()=>{
-      const btn = $('#runBench'); btn.textContent='Running...'; btn.disabled=true;
-      const res = await runCpuBench(20);
-      alert('CPU benchmark average: ' + Math.round(res.avg) + ' ms per batch');
-      btn.textContent='🚀 Run Benchmark'; btn.disabled=false;
-    });
+    // Update Timestamp
+    function updateTimestamp() {
+      document.getElementById('timestamp').textContent = new Date().toLocaleString();
+    }
 
-    $('#clearCache').addEventListener('click', ()=>{
-      try{localStorage.clear(); sessionStorage.clear(); alert('Storage cleared (local/session)');}catch(e){alert('Could not clear storage')}
-    });
+    // Initialize Application
+    function initializeApp() {
+      updateTimestamp();
+      generateSummaryCards();
+      generateSections();
+      generateTips();
+      setupSearch();
+      setupExpandCollapse();
+      setupExport();
+      setupRefresh();
+      
+      // Start monitoring
+      monitorStorage();
+      monitorBattery();
+      detectMediaDevices();
+      monitorNetworkQuality();
+      
+      // Auto-update timestamp every minute
+      setInterval(updateTimestamp, 60000);
+    }
 
-    // Search filter
-    $('#searchInput').addEventListener('input', (e)=>{
-      const q = e.target.value.trim().toLowerCase();
-      $$('.detail').forEach(d=>{
-        const label = d.querySelector('.label').textContent.toLowerCase();
-        const val = d.querySelector('.value').textContent.toLowerCase();
-        d.style.display = (!q || label.includes(q) || val.includes(q)) ? '' : 'none';
-      });
-    });
-
-    // Collapsible sections
-    $$('.section .header').forEach(h=>{
-      h.addEventListener('click', ()=>{
-        const content = h.parentElement.querySelector('.content');
-        content.style.display = content.style.display === 'none' ? '' : 'none';
-      });
-    });
-
-    // Initial run
-    applyTheme();
-    refreshAll();
-
-    // Update some brief values periodically
-    setInterval(()=>{ updateBriefs(); }, 5000);
-  })();
+    // Start the application when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+      initializeApp();
+    }
   </script>
 </body>
 </html>
