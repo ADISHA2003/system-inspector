@@ -1,877 +1,530 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Inspector</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>System Inspector — Enhanced</title>
   <style>
-    :root {
-      --bg-color: #f5f5f5;
-      --text-color: #333;
-      --card-bg: #fff;
-      --card-border: #ddd;
-      --header-bg: #4a6da7;
-      --header-text: #fff;
-      --section-bg: #e9eef6;
-      --section-text: #2c3e50;
-      --detail-label: #555;
-      --detail-value: #333;
-      --accent: #3498db;
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#4f46e5; --accent-2:#06b6d4; --glass: rgba(255,255,255,0.04);
+      --radius:12px; --glass-2: rgba(255,255,255,0.02);
+      --text:#e6eef8; --soft:#cbd5e1;
     }
+    [data-theme="light"]{ --bg:#f3f6fb; --card:#fff; --muted:#475569; --accent:#2563eb; --accent-2:#06b6d4; --glass: rgba(0,0,0,0.03); --glass-2: rgba(0,0,0,0.02); --text:#0b1220; --soft:#334155 }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      transition: background-color 0.3s, color 0.3s;
-    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;color:var(--text);background:linear-gradient(180deg,var(--bg),rgba(0,0,0,0.12));padding:20px}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      line-height: 1.6;
-      padding: 20px;
-    }
+    .app{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start}
 
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
+    /* Sidebar */
+    .sidebar{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 6px 18px rgba(2,6,23,0.6);height:fit-content}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white}
+    h1{font-size:16px;margin:0}
+    p.lead{margin:6px 0 12px;color:var(--muted);font-size:13px}
 
-    .header {
-      background-color: var(--header-bg);
-      color: var(--header-text);
-      padding: 15px 20px;
-      border-radius: 8px 8px 0 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    .controls{display:flex;flex-direction:column;gap:8px}
+    .btn{background:transparent;border:1px solid var(--glass);color:var(--text);padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;color:white}
+    .row{display:flex;gap:8px}
+    .metric{padding:10px;border-radius:8px;background:linear-gradient(180deg,var(--glass),var(--glass-2));border:1px solid rgba(255,255,255,0.03);}
+    .small{font-size:12px;color:var(--muted)}
 
-    .section {
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      margin-bottom: 15px;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    /* Main */
+    .main{display:flex;flex-direction:column;gap:14px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .search{flex:1}
+    .search input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--glass);background:transparent;color:var(--text)}
 
-    .section-header {
-      background-color: var(--section-bg);
-      color: var(--section-text);
-      padding: 10px 15px;
-      font-weight: 600;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-    }
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.45);min-height:80px}
+    .card h3{margin:0 0 8px;font-size:13px}
+    .kv{display:flex;justify-content:space-between;align-items:center}
+    .kv .k{color:var(--muted);font-size:12px}
+    .kv .v{font-weight:600}
 
-    .section-icon {
-      margin-right: 10px;
-      font-size: 18px;
-    }
+    .sections{display:grid;grid-template-columns:1fr;gap:12px}
+    .section{background:linear-gradient(180deg,var(--glass),transparent);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .section .header{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+    .section .content{margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
 
-    .section-content {
-      padding: 15px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 15px;
-    }
+    .detail{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px}
+    .detail .label{font-size:12px;color:var(--muted)}
+    .detail .value{font-weight:600;margin-top:6px}
 
-    .detail {
-      display: flex;
-      flex-direction: column;
-    }
+    .footer{text-align:center;color:var(--muted);font-size:13px}
 
-    .detail-label {
-      color: var(--detail-label);
-      font-size: 14px;
-      margin-bottom: 3px;
-    }
+    /* small screens */
+    @media (max-width:900px){.app{grid-template-columns:1fr}.sidebar{order:2}.main{order:1}}
 
-    .detail-value {
-      color: var(--detail-value);
-      font-weight: 500;
-      font-size: 15px;
-      word-break: break-word;
-    }
-
-    @media (max-width: 768px) {
-      .section-content {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-      color: var(--detail-label);
-    }
-
-    .system-summary {
-      margin-bottom: 20px;
-      padding: 15px;
-      background: var(--card-bg);
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-    }
-
-    .tooltip-icon {
-      font-size: 12px;
-      margin-left: 5px;
-      cursor: help;
-    }
-
-    .search-container {
-      margin: 15px 0;
-      display: flex;
-      gap: 10px;
-    }
-
-    .search-container input,
-    .search-container select {
-      padding: 8px;
-      border: 1px solid var(--card-border);
-      border-radius: 4px;
-      background: var(--card-bg);
-      color: var(--text-color);
-    }
-
-    .export-button {
-      display: none;
-      padding: 8px 16px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .system-tips {
-      margin-top: 20px;
-      padding: 15px;
-      background: var(--card-bg);
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-    }
+    /* subtle animations */
+    .fade{animation:fadeIn .5s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   </style>
-  <script>
-    function addTooltips() {
-      const technicalTerms = {
-        "RTT": "Round Trip Time - How long it takes for data to travel to its destination and back",
-        "WebGL": "Web Graphics Library - Enables 3D graphics in your browser",
-        "CPU Threads": "Number of processing units that can handle tasks simultaneously",
-        "GPU": "Graphics Processing Unit - Chip that handles visual calculations",
-        "WebAssembly": "Technology that allows running high-performance code in browsers",
-        "Service Workers": "Technology that enables offline functionality in web apps"
-      };
-
-      document.querySelectorAll('.detail-label').forEach(label => {
-        const term = label.textContent;
-        if (technicalTerms[term]) {
-          label.innerHTML += ` <span class="tooltip-icon">ℹ️</span>`;
-          label.setAttribute('title', technicalTerms[term]);
-        }
-      });
-    }
-  </script>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>System Inspector</h1>
-    </div>
+  <div class="app" data-theme="dark">
+    <aside class="sidebar fade" aria-label="controls">
+      <div class="brand"><div class="logo">SI</div><div><h1>System Inspector</h1><p class="lead">Enhanced diagnostics & tips</p></div></div>
 
-    <div id="results">
-      <!-- Sections will be inserted here by JavaScript -->
-    </div>
+      <div style="height:8px"></div>
+      <div class="controls">
+        <button class="btn primary" id="refreshBtn">🔄 Refresh</button>
+        <div class="row">
+          <button class="btn" id="exportJson">📥 Export JSON</button>
+          <button class="btn" id="copyBtn">📋 Copy</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="themeToggle">🌙 Theme</button>
+          <button class="btn" id="runBench">🚀 Run Benchmark</button>
+        </div>
+        <div style="height:10px"></div>
+        <div class="metric"><div class="small">Last updated</div><div id="lastUpdated" style="font-weight:700;margin-top:6px">—</div></div>
+        <div class="metric" style="margin-top:8px"><div class="small">Quick Actions</div>
+          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="pingTest">Ping Test</button><button class="btn" id="clearCache">Clear Storage</button></div>
+        </div>
+      </div>
+    </aside>
 
-    <div class="footer">
-      <p>System inspection performed on <span id="timestamp"></span></p>
-    </div>
+    <main class="main">
+      <div class="topbar">
+        <div class="search"><input id="searchInput" placeholder="Search properties (e.g. GPU, Battery, WebGL)..." /></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="card" style="min-width:220px;padding:10px"><div class="kv"><div><div class="small">Browser</div><div id="browserBrief" class="v">—</div></div><div style="text-align:right"><div class="small">Network</div><div id="connBrief" class="v">—</div></div></div></div>
+          <div class="card" style="min-width:140px;padding:10px"><div class="small">CPU Threads</div><div id="cpuThreads" style="font-weight:700">—</div></div>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card fade"><h3>Quick Overview</h3><div class="kv"><div><div class="small">Device</div><div id="deviceBrief" class="v">—</div></div><div><div class="small">Screen</div><div id="screenBrief" class="v">—</div></div></div></div>
+        <div class="card fade"><h3>Performance</h3><div class="kv"><div><div class="small">Estimated</div><div id="perfBrief" class="v">—</div></div><div><div class="small">Memory</div><div id="memBrief" class="v">—</div></div></div></div>
+        <div class="card fade"><h3>Power</h3><div class="kv"><div><div class="small">Battery</div><div id="batteryBrief" class="v">—</div></div><div><div class="small">Charging</div><div id="chargingBrief" class="v">—</div></div></div></div>
+      </div>
+
+      <div class="sections">
+        <section class="section fade" id="section-browser">
+          <div class="header"><strong>Browser & Platform</strong><div class="small">Click to collapse</div></div>
+          <div class="content" id="content-browser"></div>
+        </section>
+
+        <section class="section fade" id="section-hardware">
+          <div class="header"><strong>Hardware & Memory</strong><div class="small">CPU / RAM / Threads</div></div>
+          <div class="content" id="content-hardware"></div>
+        </section>
+
+        <section class="section fade" id="section-display">
+          <div class="header"><strong>Display & Graphics</strong><div class="small">WebGL / GPU info</div></div>
+          <div class="content" id="content-display"></div>
+        </section>
+
+        <section class="section fade" id="section-network">
+          <div class="header"><strong>Network & Resources</strong><div class="small">Connection / Timing / Ping</div></div>
+          <div class="content" id="content-network"></div>
+        </section>
+
+        <section class="section fade" id="section-media">
+          <div class="header"><strong>Media & Devices</strong><div class="small">Cameras / Microphones</div></div>
+          <div class="content" id="content-media"></div>
+        </section>
+
+        <section class="section fade" id="section-features">
+          <div class="header"><strong>Features & Capabilities</strong><div class="small">APIs supported</div></div>
+          <div class="content" id="content-features"></div>
+        </section>
+      </div>
+
+      <div class="footer">System Inspector — enhanced · <span id="timestamp">—</span></div>
+    </main>
   </div>
 
   <script>
-    // Update timestamp
-    document.getElementById('timestamp').textContent = new Date().toLocaleString();
+  (function(){
+    // Utility helpers
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const now = () => new Date().toLocaleString();
 
-    // System inspection function
-    function inspectSystem() {
-      const resultsContainer = document.getElementById('results');
-      const sections = [
-        {
-          id: 'browser',
-          icon: '🌐',
-          title: 'Browser & Device',
-          details: getBrowserDetails()
-        },
-        {
-          id: 'system',
-          icon: '💻',
-          title: 'System Information',
-          details: getSystemDetails()
-        },
-        {
-          id: 'display',
-          icon: '🖥️',
-          title: 'Display & Graphics',
-          details: getDisplayDetails()
-        },
-        {
-          id: 'network',
-          icon: '📶',
-          title: 'Network',
-          details: getNetworkDetails()
-        },
-        {
-          id: 'features',
-          icon: '✨',
-          title: 'Features & Capabilities',
-          details: getFeatureDetails()
-        },
-        {
-          id: 'storage',
-          icon: '💾',
-          title: 'Storage & Performance',
-          details: getStorageDetails()
-        },
-        {
-          id: 'media',
-          icon: '🎥',
-          title: 'Media Devices',
-          details: getMediaDetails()
-        },
-        {
-          id: 'hardware',
-          icon: '🔌',
-          title: 'Hardware',
-          details: getHardwareInfo()
-        },
-        {
-          id: 'power',
-          icon: '🔋',
-          title: 'Power Management',
-          details: getPowerDetails()
-        },
-        {
-          id: 'networkStats',
-          icon: '📊',
-          title: 'Network Statistics',
-          details: getDetailedNetworkInfo()
-        }
-      ];
-
-      // Create sections
-      sections.forEach(section => {
-        const sectionElement = document.createElement('div');
-        sectionElement.className = 'section';
-        sectionElement.innerHTML = `
-          <div class="section-header" id="header-${section.id}">
-            <span class="section-icon">${section.icon}</span>
-            <span>${section.title}</span>
-          </div>
-          <div class="section-content" id="content-${section.id}">
-            ${section.details.map(detail => `
-              <div class="detail">
-                <div class="detail-label">${detail.label}</div>
-                <div class="detail-value">${detail.value}</div>
-              </div>
-            `).join('')}
-          </div>
-        `;
-        resultsContainer.appendChild(sectionElement);
-
-        // Make sections collapsible
-        document.getElementById(`header-${section.id}`).addEventListener('click', () => {
-          const content = document.getElementById(`content-${section.id}`);
-          content.classList.toggle('hidden');
-        });
-      });
-
-      // Add tooltips
-      addTooltips();
+    // Scoped update helpers to avoid collision
+    function makeDetail(label, value){
+      return `<div class="detail"><div class="label">${label}</div><div class="value">${value}</div></div>`;
     }
 
-    function getBrowserDetails() {
-      const userAgent = navigator.userAgent;
-      const browserDetails = [];
-      
-      // Browser name and version detection
-      let browserName = "Unknown";
-      let browserVersion = "";
-      
-      if (/Edg/.test(userAgent)) {
-        browserName = "Microsoft Edge";
-      } else if (/Firefox/.test(userAgent)) {
-        browserName = "Firefox";
-      } else if (/Chrome/.test(userAgent)) {
-        browserName = "Chrome";
-      } else if (/Safari/.test(userAgent)) {
-        browserName = "Safari";
-      } else if (/Opera|OPR/.test(userAgent)) {
-        browserName = "Opera";
-      } else if (/MSIE|Trident/.test(userAgent)) {
-        browserName = "Internet Explorer";
-      }
-      
-      const versionMatch = userAgent.match(/(Firefox|Chrome|Safari|Edge|OPR|Version|MSIE|rv:)[\s\/:](\d+(\.\d+)?)/i);
-      browserVersion = versionMatch ? versionMatch[2] : "";
-      
-      browserDetails.push(
-        { label: "Browser", value: `${browserName} ${browserVersion}` },
-        { label: "User Agent", value: userAgent },
-        { label: "Language", value: navigator.language },
-        { label: "Cookies Enabled", value: navigator.cookieEnabled ? "Yes" : "No" },
-        { label: "Do Not Track", value: navigator.doNotTrack ? "Enabled" : "Disabled" }
-      );
-      
-      if (navigator.languages) {
-        browserDetails.push({ label: "Language Preferences", value: navigator.languages.join(", ") });
-      }
-      
-      return browserDetails;
+    // Safe get with fallback
+    function safe(fn, fallback){try{return fn()}catch(e){return fallback}}
+
+    // Browser parsing once
+    function parseBrowser(){
+      const ua = navigator.userAgent || '';
+      let name = 'Unknown';
+      if(/Edg\//i.test(ua)) name='Edge';
+      else if(/OPR|Opera/i.test(ua)) name='Opera';
+      else if(/Chrome\//i.test(ua)) name='Chrome';
+      else if(/Firefox\//i.test(ua)) name='Firefox';
+      else if(/Safari\//i.test(ua)) name='Safari';
+      const ver = (ua.match(/(Edg|Chrome|Firefox|Version|Safari|OPR|MSIE|rv:)(?:\/|:| )(\d+(?:\.\d+)?)/i) || [,'', '']).pop();
+      return {name, version: ver||'' , ua};
     }
 
-    function getSystemDetails() {
-      const userAgent = navigator.userAgent;
-      const platform = navigator.platform;
-      const systemDetails = [];
-      
-      // OS detection
-      let osName = "Unknown OS";
-      if (/Windows NT 10.0/.test(userAgent)) {
-        osName = "Windows 10/11";
-      } else if (/Windows NT 6.3/.test(userAgent)) {
-        osName = "Windows 8.1";
-      } else if (/Windows NT 6.2/.test(userAgent)) {
-        osName = "Windows 8";
-      } else if (/Windows NT 6.1/.test(userAgent)) {
-        osName = "Windows 7";
-      } else if (/Mac OS X|macOS/.test(userAgent)) {
-        osName = "macOS";
-      } else if (/iPhone|iPad|iPod/.test(userAgent)) {
-        osName = "iOS";
-      } else if (/Android/.test(userAgent)) {
-        osName = "Android";
-      } else if (/Linux/.test(userAgent)) {
-        osName = "Linux";
-      }
-      
-      // Device type detection
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(userAgent);
-      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const deviceType = isMobile ? "Mobile" : isTouchDevice ? "Tablet/Touch" : "Desktop";
-      
-      // Architecture detection
-      const architecture = /x86_64|Win64|x64|amd64/.test(userAgent) ? "64-bit" : "32-bit";
-      
-      systemDetails.push(
-        { label: "Operating System", value: osName },
-        { label: "Platform", value: platform },
-        { label: "Device Type", value: deviceType },
-        { label: "Architecture", value: architecture },
-        { label: "Date & Time", value: new Date().toLocaleString() },
-        { label: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone }
-      );
-      
-      if ('hardwareConcurrency' in navigator) {
-        systemDetails.push({ label: "CPU Cores", value: navigator.hardwareConcurrency });
-      }
-      
-      if ('deviceMemory' in navigator) {
-        systemDetails.push({ label: "Memory", value: navigator.deviceMemory + " GB" });
-      }
-
-      // Add more useful system info
-      systemDetails.push(
-        { 
-          label: "Screen Type", 
-          value: window.matchMedia('(color-gamut: p3)').matches ? "High Color Quality (P3)" : "Standard"
-        },
-        { 
-          label: "Power Preference",
-          value: navigator.powerPreference || "No Preference"
-        },
-        {
-          label: "Dark Mode",
-          value: window.matchMedia('(prefers-color-scheme: dark)').matches ? "Enabled" : "Disabled"
-        },
-        {
-          label: "Reduced Motion",
-          value: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? "Enabled" : "Disabled"
-        }
-      );
-
-      // Add estimated device performance
-      const performance = {
-        cpu: navigator.hardwareConcurrency > 4 ? "High" : "Standard",
-        memory: navigator.deviceMemory > 4 ? "High" : "Standard"
-      };
-      
-      systemDetails.push({
-        label: "Estimated Performance",
-        value: `${performance.cpu} Performance Device (${performance.memory} Memory)`
-      });
-
-      return systemDetails;
+    // Async collectors
+    async function collectBrowser(){
+      const b = parseBrowser();
+      const arr = [];
+      arr.push({label:'Browser', value: `${b.name} ${b.version}`});
+      arr.push({label:'User Agent', value: b.ua});
+      arr.push({label:'Language', value: navigator.language || '—'});
+      arr.push({label:'Cookies Enabled', value: navigator.cookieEnabled ? 'Yes' : 'No'});
+      arr.push({label:'Do Not Track', value: navigator.doNotTrack || 'unspecified'});
+      if(navigator.languages) arr.push({label:'Languages', value: navigator.languages.join(', ')});
+      return arr;
     }
 
-    function getDisplayDetails() {
-      const displayDetails = [];
-      
-      displayDetails.push(
-        { label: "Screen Resolution", value: `${window.screen.width}x${window.screen.height}` },
-        { label: "Window Size", value: `${window.innerWidth}x${window.innerHeight}` },
-        { label: "Pixel Ratio", value: window.devicePixelRatio }
-      );
-      
-      // Try to get GPU info
-      try {
-        const canvas = document.createElement("canvas");
-        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-        
-        if (gl) {
-          const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-          if (debugInfo) {
-            const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-            displayDetails.push(
-              { label: "GPU Vendor", value: vendor },
-              { label: "GPU Renderer", value: renderer }
-            );
+    async function collectSystem(){
+      const ua = navigator.userAgent || '';
+      let os='Unknown';
+      if(/Windows NT 10.0/.test(ua)) os='Windows 10/11';
+      else if(/Windows NT 6.3/.test(ua)) os='Windows 8.1';
+      else if(/Mac OS X|macOS/.test(ua)) os='macOS';
+      else if(/Android/.test(ua)) os='Android';
+      else if(/iPhone|iPad|iPod/.test(ua)) os='iOS';
+      else if(/Linux/.test(ua)) os='Linux';
+
+      const details = [];
+      details.push({label:'Operating System', value: os});
+      details.push({label:'Platform', value: navigator.platform || '—'});
+
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(ua);
+      details.push({label:'Device Type', value: isMobile ? 'Mobile' : 'Desktop'});
+
+      const arch = /x86_64|Win64|x64|amd64/.test(ua) ? '64-bit' : '32-bit';
+      details.push({label:'Architecture', value: arch});
+      details.push({label:'Date & Time', value: now()});
+      details.push({label:'Timezone', value: Intl.DateTimeFormat().resolvedOptions().timeZone || '—'});
+
+      if('hardwareConcurrency' in navigator) details.push({label:'CPU Threads', value: navigator.hardwareConcurrency});
+      if('deviceMemory' in navigator) details.push({label:'Device Memory', value: navigator.deviceMemory + ' GB'});
+
+      details.push({label:'Dark Mode', value: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Enabled' : 'Disabled'});
+      details.push({label:'Reduced Motion', value: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'Enabled' : 'Disabled'});
+
+      // Estimated performance
+      const cpuPerf = (navigator.hardwareConcurrency || 2) > 4 ? 'High' : 'Standard';
+      const memPerf = (navigator.deviceMemory || 4) > 4 ? 'High' : 'Standard';
+      details.push({label:'Estimated Performance', value:`${cpuPerf} (${memPerf} memory)`});
+      return details;
+    }
+
+    async function collectDisplay(){
+      const arr=[];
+      arr.push({label:'Screen Resolution', value:`${window.screen.width}x${window.screen.height}`});
+      arr.push({label:'Window Size', value:`${window.innerWidth}x${window.innerHeight}`});
+      arr.push({label:'Pixel Ratio', value: window.devicePixelRatio});
+
+      // WebGL/WebGL2/WebGPU detection and GPU info
+      try{
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const gl2 = canvas.getContext('webgl2');
+        if(gl){
+          const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+          if(dbg){
+            arr.push({label:'GPU Vendor', value: gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL)});
+            arr.push({label:'GPU Renderer', value: gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)});
+          } else {
+            arr.push({label:'GPU', value:'WebGL available (details restricted)'});
           }
-          
-          displayDetails.push(
-            { label: "WebGL Version", value: gl.getParameter(gl.VERSION) },
-            { label: "Max Texture Size", value: gl.getParameter(gl.MAX_TEXTURE_SIZE) + "px" }
-          );
+          arr.push({label:'WebGL Version', value: gl.getParameter(gl.VERSION)});
+          arr.push({label:'Max Texture Size', value: gl.getParameter(gl.MAX_TEXTURE_SIZE) + ' px'});
+        } else if(gl2){
+          arr.push({label:'WebGL2', value: 'Supported'});
+        } else {
+          arr.push({label:'WebGL', value: 'Not supported'});
         }
-      } catch (e) {
-        displayDetails.push({ label: "GPU Information", value: "Not available" });
-      }
-      
-      return displayDetails;
-    }
 
-    function getNetworkDetails() {
-      const networkDetails = [];
-      
-      // Check if connection info available
-      if ('connection' in navigator) {
-        const connection = navigator.connection;
-        networkDetails.push(
-          { label: "Connection Type", value: connection.effectiveType || "Unknown" },
-          { label: "Downlink Speed", value: connection.downlink ? connection.downlink + " Mbps" : "Unknown" },
-          { label: "RTT", value: connection.rtt ? connection.rtt + " ms" : "Unknown" },
-          { label: "Save Data Mode", value: connection.saveData ? "Enabled" : "Disabled" }
-        );
-      } else {
-        networkDetails.push({ label: "Network Information", value: "Not available" });
-      }
-      
-      networkDetails.push({ label: "Online Status", value: navigator.onLine ? "Online" : "Offline" });
-      
-      return networkDetails.concat(getDetailedNetworkInfo());
-    }
-
-    function getDetailedNetworkInfo() {
-      const networkStats = [];
-      
-      // Resource timing data
-      if (window.performance && performance.getEntriesByType) {
-        const resources = performance.getEntriesByType("resource");
-        const totalSize = resources.reduce((total, resource) => {
-          return total + (resource.transferSize || 0);
-        }, 0);
-        
-        networkStats.push({
-          label: "Resources Loaded",
-          value: `${resources.length} (${Math.round(totalSize / 1024)} KB)`
-        });
-      }
-      
-      // Connection changes
-      if ('connection' in navigator) {
-        navigator.connection.addEventListener('change', () => {
-          document.querySelector('[data-network-quality]').textContent = 
-            `${navigator.connection.effectiveType} (${navigator.connection.downlink} Mbps)`;
-        });
-        
-        networkStats.push({
-          label: "Network Quality",
-          value: "<span data-network-quality>Monitoring...</span>"
-        });
-      }
-      
-      return networkStats;
-    }
-
-    function getFeatureDetails() {
-      const features = [
-        { name: "Geolocation", test: 'geolocation' in navigator },
-        { name: "Camera/Microphone", test: 'mediaDevices' in navigator },
-        { name: "Web Bluetooth", test: 'bluetooth' in navigator },
-        { name: "Vibration", test: 'vibrate' in navigator },
-        { name: "Push Notifications", test: 'PushManager' in window },
-        { name: "Speech Recognition", test: 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window },
-        { name: "Speech Synthesis", test: 'speechSynthesis' in window },
-        { name: "Web Share", test: 'share' in navigator },
-        { name: "Gamepad API", test: 'getGamepads' in navigator },
-        { name: "Web Payments", test: 'PaymentRequest' in window },
-        { name: "WebGL", test: !!document.createElement('canvas').getContext('webgl') },
-        { name: "WebGL 2", test: !!document.createElement('canvas').getContext('webgl2') },
-        { name: "WebAssembly", test: typeof WebAssembly === 'object' },
-        { name: "Service Workers", test: 'serviceWorker' in navigator },
-        { name: "Web Workers", test: typeof Worker === 'function' },
-        { name: "Clipboard API", test: navigator.clipboard && 'writeText' in navigator.clipboard }
-      ];
-      
-      return features.map(feature => ({
-        label: feature.name,
-        value: feature.test ? "Supported" : "Not Supported"
-      }));
-    }
-
-    function getStorageDetails() {
-      const storageDetails = [];
-      
-      // Check performance metrics
-      try {
-        const perfEntries = performance.getEntriesByType("navigation");
-        if (perfEntries.length > 0) {
-          const p = perfEntries[0];
-          storageDetails.push(
-            { label: "Page Load Time", value: Math.round(p.loadEventEnd - p.startTime) + " ms" },
-            { label: "DOM Content Ready", value: Math.round(p.domContentLoadedEventEnd - p.startTime) + " ms" }
-          );
-        } else if (performance.timing) {
-          const t = performance.timing;
-          storageDetails.push(
-            { label: "Page Load Time", value: t.loadEventEnd - t.navigationStart + " ms" },
-            { label: "DOM Content Ready", value: t.domContentLoadedEventEnd - t.navigationStart + " ms" }
-          );
+        // WebGPU detection (experimental)
+        if('gpu' in navigator){
+          try{
+            arr.push({label:'WebGPU', value:'Available (experimental)'});
+          }catch(e){arr.push({label:'WebGPU', value:'Detected but cannot query'})}
+        } else {
+          arr.push({label:'WebGPU', value:'Not detected'});
         }
-      } catch (e) {
-        storageDetails.push({ label: "Performance Metrics", value: "Not available" });
-      }
-      
-      // Check storage information
-      try {
-        if ('storage' in navigator && navigator.storage.estimate) {
-          navigator.storage.estimate().then(estimate => {
-            const usedMB = Math.round(estimate.usage / (1024 * 1024));
-            const quotaMB = Math.round(estimate.quota / (1024 * 1024));
-            const percentUsed = Math.round((estimate.usage / estimate.quota) * 100);
-            
-            document.querySelector('[data-storage-usage]').textContent = 
-              `${usedMB} MB / ${quotaMB} MB (${percentUsed}%)`;
-          });
-          
-          storageDetails.push({ label: "Storage Usage", value: "<span data-storage-usage>Calculating...</span>" });
-        }
-      } catch (e) {
-        // Storage API not available
-      }
-      
-      // Check for local storage
-      try {
-        if (window.localStorage) {
-          storageDetails.push({ label: "localStorage", value: "Available" });
-        }
-      } catch (e) {
-        storageDetails.push({ label: "localStorage", value: "Disabled or blocked" });
-      }
-      
-      // Battery info if available
-      try {
-        if ('getBattery' in navigator) {
-          navigator.getBattery().then(battery => {
-            document.querySelector('[data-battery-level]').textContent = 
-              Math.round(battery.level * 100) + "% " + (battery.charging ? "(Charging)" : "(Not charging)");
-          });
-          
-          storageDetails.push({ label: "Battery", value: "<span data-battery-level>Checking...</span>" });
-        }
-      } catch (e) {
-        // Battery API not available
-      }
-      
-      return storageDetails;
+      }catch(e){arr.push({label:'GPU Information', value:'Could not detect'})}
+
+      return arr;
     }
 
-    function getMediaDetails() {
-      const mediaDetails = [];
-      
-      // Enumerate media devices
-      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        navigator.mediaDevices.enumerateDevices()
-          .then(devices => {
-            const audioInputs = devices.filter(d => d.kind === 'audioinput').length;
-            const audioOutputs = devices.filter(d => d.kind === 'audiooutput').length;
-            const videoInputs = devices.filter(d => d.kind === 'videoinput').length;
-            
-            document.querySelector('[data-media-devices]').textContent = 
-              `Cameras: ${videoInputs}, Microphones: ${audioInputs}, Speakers: ${audioOutputs}`;
-          })
-          .catch(err => {
-            document.querySelector('[data-media-devices]').textContent = 'Permission denied or error';
-          });
-        
-        mediaDetails.push(
-          { label: "Media Devices", value: "<span data-media-devices>Detecting...</span>" },
-          { label: "Media Support", value: "WebRTC " + ('RTCPeerConnection' in window ? "Supported" : "Not Supported") }
-        );
-      }
-      
-      return mediaDetails;
-    }
+    async function collectNetwork(){
+      const arr=[];
+      const conn = navigator.connection || {};
+      arr.push({label:'Connection Type', value: conn.effectiveType || 'Unknown'});
+      arr.push({label:'Downlink', value: conn.downlink ? conn.downlink + ' Mbps' : '—'});
+      arr.push({label:'RTT', value: conn.rtt ? conn.rtt + ' ms' : '—'});
+      arr.push({label:'Save-Data', value: conn.saveData ? 'Enabled' : 'Disabled'});
+      arr.push({label:'Online', value: navigator.onLine ? 'Online' : 'Offline'});
 
-    function getHardwareInfo() {
-      const hardwareDetails = [];
-      
-      // Check USB devices
-      if ('usb' in navigator) {
-        navigator.usb.getDevices()
-          .then(devices => {
-            document.querySelector('[data-usb-devices]').textContent = 
-              `${devices.length} device(s) connected`;
-          })
-          .catch(err => {
-            document.querySelector('[data-usb-devices]').textContent = 'Permission denied or error';
-          });
-        hardwareDetails.push({ label: "USB Devices", value: "<span data-usb-devices>Checking...</span>" });
-      }
-      
-      // Check virtual reality support
-      if ('xr' in navigator) {
-        navigator.xr.isSessionSupported('immersive-vr')
-          .then(supported => {
-            document.querySelector('[data-vr-support]').textContent = 
-              supported ? "VR Ready" : "VR Not Supported";
-          })
-          .catch(err => {
-            document.querySelector('[data-vr-support]').textContent = 'Cannot detect VR';
-          });
-        hardwareDetails.push({ label: "VR Support", value: "<span data-vr-support>Checking...</span>" });
-      }
+      // Resource timing summary
+      try{
+        const resources = performance.getEntriesByType('resource') || [];
+        const total = resources.reduce((s,r)=>s+(r.transferSize||0),0);
+        arr.push({label:'Resources Loaded', value:`${resources.length} (${Math.round(total/1024)} KB)`});
+      }catch(e){/*ignore*/}
 
-      // Add CPU & Memory info
-      if ('hardwareConcurrency' in navigator) {
-        hardwareDetails.push({ label: "CPU Threads", value: navigator.hardwareConcurrency });
-      }
-      
-      if ('deviceMemory' in navigator) {
-        hardwareDetails.push({ label: "RAM", value: navigator.deviceMemory + " GB" });
-      }
-      
-      return hardwareDetails;
-    }
-
-    function getPowerDetails() {
-      const powerDetails = [];
-      
-      if ('getBattery' in navigator) {
-        navigator.getBattery()
-          .then(battery => {
-            const updateBatteryInfo = () => {
-              document.querySelector('[data-battery-status]').textContent = 
-                `${Math.round(battery.level * 100)}% (${battery.charging ? "Charging" : "Not charging"})`;
-              
-              document.querySelector('[data-battery-time]').textContent = 
-                battery.charging ? 
-                  (battery.chargingTime === Infinity ? "Calculating..." : 
-                    `${Math.round(battery.chargingTime / 60)} minutes until full`) : 
-                  (battery.dischargingTime === Infinity ? "Calculating..." : 
-                    `${Math.round(battery.dischargingTime / 60)} minutes remaining`);
-            };
-
-            // Add event listeners
-            battery.addEventListener('levelchange', updateBatteryInfo);
-            battery.addEventListener('chargingchange', updateBatteryInfo);
-            battery.addEventListener('chargingtimechange', updateBatteryInfo);
-            battery.addEventListener('dischargingtimechange', updateBatteryInfo);
-
-            // Initial update
-            updateBatteryInfo();
-            
-            powerDetails.push(
-              { label: "Battery Status", value: "<span data-battery-status>Checking...</span>" },
-              { label: "Time Remaining", value: "<span data-battery-time>Calculating...</span>" }
-            );
-          })
-          .catch(err => {
-            powerDetails.push({ label: "Battery Info", value: "Not available" });
-          });
-      } else {
-        powerDetails.push({ label: "Battery API", value: "Not supported" });
-      }
-      
-      return powerDetails;
-    }
-
-    // Add this function
-    function addExportButton() {
-      const exportBtn = document.createElement('button');
-      exportBtn.className = 'export-button';
-      exportBtn.textContent = '📥 Export System Information';
-      exportBtn.onclick = () => {
-        const systemData = {
-          browser: getBrowserDetails(),
-          system: getSystemDetails(),
-          network: getNetworkDetails(),
-          // ...add other sections
-          exportDate: new Date().toLocaleString()
+      // network quality placeholder updated by listener
+      if(conn && typeof conn.addEventListener === 'function'){
+        const update = () => {
+          const el = document.querySelector('[data-network-quality]');
+          if(el) el.textContent = `${conn.effectiveType || 'unknown'} ${conn.downlink?`(${conn.downlink} Mbps)`:''}`;
         };
-        
-        const blob = new Blob([JSON.stringify(systemData, null, 2)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'system-info.json';
-        a.click();
-      };
-      
-      document.querySelector('.header').appendChild(exportBtn);
+        conn.addEventListener('change', update);
+        arr.push({label:'Network Quality', value:`<span data-network-quality>${conn.effectiveType || 'Monitoring...'}</span>`});
+      }
+
+      return arr;
     }
 
-    // Add this function
-    function generateSummary() {
-      const summary = document.createElement('div');
-      summary.className = 'system-summary';
-      summary.innerHTML = `
-        <div class="summary-card">
-          <h3>Quick Overview</h3>
-          <ul>
-            <li>You're using ${getBrowserName()} on ${getOSName()}</li>
-            <li>Your device is a ${getDeviceType()} with ${navigator.hardwareConcurrency} CPU threads</li>
-            <li>Your internet connection is ${getConnectionQuality()}</li>
-            <li>Screen resolution: ${window.screen.width}x${window.screen.height}</li>
-          </ul>
-        </div>
-      `;
-      
-      document.getElementById('results').prepend(summary);
+    async function collectStorageAndPower(){
+      const arr=[];
+      // Performance timings
+      try{
+        const nav = performance.getEntriesByType('navigation')[0] || performance.timing || null;
+        if(nav){
+          const load = (nav.loadEventEnd && nav.startTime) ? Math.max(0,Math.round(nav.loadEventEnd - nav.startTime)) : '—';
+          arr.push({label:'Page Load Time', value: typeof load === 'number' ? load + ' ms' : '—'});
+        }
+      }catch(e){}
+
+      // Storage estimate
+      if(navigator.storage && navigator.storage.estimate){
+        arr.push({label:'Storage Usage', value:'<span data-storage-usage>Calculating...</span>'});
+        navigator.storage.estimate().then(est=>{
+          const used = Math.round((est.usage||0)/(1024*1024));
+          const quota = Math.round((est.quota||0)/(1024*1024));
+          const percent = quota?Math.round((used/quota)*100):0;
+          const el = document.querySelector('[data-storage-usage]');
+          if(el) el.textContent = `${used} MB / ${quota} MB (${percent}%)`;
+        }).catch(()=>{});
+      }
+
+      // Battery
+      if('getBattery' in navigator){
+        arr.push({label:'Battery', value:'<span data-battery>Checking...</span>'});
+        navigator.getBattery().then(bat=>{
+          const update = ()=>{
+            const el = document.querySelector('[data-battery]');
+            if(!el) return;
+            el.textContent = `${Math.round(bat.level*100)}% ${bat.charging? '(Charging)':''}`;
+          };
+          bat.addEventListener('levelchange', update);
+          bat.addEventListener('chargingchange', update);
+          update();
+        }).catch(()=>{
+          const el = document.querySelector('[data-battery]'); if(el) el.textContent='Unavailable';
+        });
+      } else {
+        arr.push({label:'Battery', value:'Not supported'});
+      }
+
+      return arr;
     }
 
-    // Add this function
-    function addSystemTips() {
-      const tips = document.createElement('div');
-      tips.className = 'system-tips';
-      
-      // Generate relevant tips based on system information
-      const hasPowerfulCPU = navigator.hardwareConcurrency > 4;
-      const hasHighResDisplay = window.devicePixelRatio > 1;
-      const hasGoodConnection = navigator.connection?.effectiveType === '4g';
-      const hasServiceWorker = 'serviceWorker' in navigator;
-      const hasLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4;
-      
-      tips.innerHTML = `
-        <div class="tips-card">
-          <h3>💡 Helpful System Tips</h3>
-          <ul style="list-style: none; padding: 0;">
-            ${hasPowerfulCPU ? 
-              '<li>✅ Your device is well-suited for demanding applications and multitasking</li>' :
-              '<li>⚠️ Consider closing background applications for better performance</li>'
-            }
-            ${hasHighResDisplay ?
-              '<li>✅ Your display supports high-resolution content and crisp visuals</li>' :
-              '<li>ℹ️ Content will display in standard resolution on your screen</li>'
-            }
-            ${hasGoodConnection ?
-              '<li>✅ Your connection is suitable for HD video streaming</li>' :
-              '<li>⚠️ You might want to use lower quality settings for videos</li>'
-            }
-            ${hasServiceWorker ?
-              '<li>✅ Your browser supports offline functionality and PWA features</li>' :
-              '<li>ℹ️ Consider updating your browser for better offline support</li>'
-            }
-            ${hasLowMemory ?
-              '<li>⚠️ Limited system memory detected - try to keep fewer tabs open</li>' :
-              '<li>✅ You have sufficient memory for smooth browsing</li>'
-            }
-            <li>ℹ️ ${window.matchMedia('(prefers-color-scheme: dark)').matches ? 
-              'Dark mode is enabled - easier on the eyes at night' : 
-              'Light mode is enabled - good for daytime viewing'}</li>
-          </ul>
-        </div>
-      `;
-      
-      document.getElementById('results').appendChild(tips);
+    async function collectMedia(){
+      const arr=[];
+      arr.push({label:'Media Support', value: ('mediaDevices' in navigator) ? 'Available' : 'Not available'});
+      if(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices){
+        arr.push({label:'Media Devices', value: '<span data-media>Detecting...</span>'});
+        navigator.mediaDevices.enumerateDevices().then(devs=>{
+          const cams = devs.filter(d=>d.kind==='videoinput').length;
+          const mics = devs.filter(d=>d.kind==='audioinput').length;
+          const outs = devs.filter(d=>d.kind==='audiooutput').length;
+          const el = document.querySelector('[data-media]'); if(el) el.textContent = `Cameras: ${cams}, Microphones: ${mics}, Speakers: ${outs}`;
+        }).catch(err=>{const el=document.querySelector('[data-media]'); if(el) el.textContent='Permission denied or none';});
+      }
+      return arr;
     }
 
-    // Helper functions for summary generation
-    function getBrowserName() {
-      const userAgent = navigator.userAgent;
-      if (/Edg/.test(userAgent)) return "Microsoft Edge";
-      if (/Firefox/.test(userAgent)) return "Firefox";
-      if (/Chrome/.test(userAgent)) return "Chrome";
-      if (/Safari/.test(userAgent)) return "Safari";
-      if (/Opera|OPR/.test(userAgent)) return "Opera";
-      if (/MSIE|Trident/.test(userAgent)) return "Internet Explorer";
-      return "Unknown Browser";
+    async function collectFeatures(){
+      const feats = [
+        ['Geolocation','geolocation' in navigator],
+        ['Camera/Microphone','mediaDevices' in navigator],
+        ['Web Bluetooth','bluetooth' in navigator],
+        ['Vibration','vibrate' in navigator],
+        ['Push Notifications','PushManager' in window],
+        ['Speech Recognition','SpeechRecognition' in window || 'webkitSpeechRecognition' in window],
+        ['Speech Synthesis','speechSynthesis' in window],
+        ['Web Share','share' in navigator],
+        ['Gamepad API','getGamepads' in navigator],
+        ['Web Payments','PaymentRequest' in window],
+        ['WebGL', !!document.createElement('canvas').getContext('webgl')],
+        ['WebGL2', !!document.createElement('canvas').getContext('webgl2')],
+        ['WebAssembly', typeof WebAssembly === 'object'],
+        ['Service Workers','serviceWorker' in navigator],
+        ['Web Workers', typeof Worker === 'function'],
+        ['Clipboard API', navigator.clipboard && 'writeText' in navigator.clipboard]
+      ];
+      return feats.map(f=>({label:f[0], value: f[1] ? 'Supported' : 'Not Supported'}));
     }
 
-    function getOSName() {
-      const userAgent = navigator.userAgent;
-      if (/Windows NT 10.0/.test(userAgent)) return "Windows 10/11";
-      if (/Mac OS X|macOS/.test(userAgent)) return "macOS";
-      if (/iPhone|iPad|iPod/.test(userAgent)) return "iOS";
-      if (/Android/.test(userAgent)) return "Android";
-      if (/Linux/.test(userAgent)) return "Linux";
-      return "Unknown OS";
+    // Render helpers
+    function renderSection(containerId, items){
+      const el = document.getElementById(containerId);
+      if(!el) return;
+      el.innerHTML = items.map(i => makeDetail(i.label, i.value)).join('');
     }
 
-    function getDeviceType() {
-      const userAgent = navigator.userAgent;
-      if (/Mobi|Android|iPhone|iPad/i.test(userAgent)) return "Mobile Device";
-      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return "Tablet";
-      return "Desktop Computer";
+    // summary updates
+    function updateBriefs(){
+      const b = parseBrowser();
+      $('#browserBrief').textContent = `${b.name} ${b.version}`;
+      $('#cpuThreads').textContent = navigator.hardwareConcurrency || '—';
+      $('#deviceBrief').textContent = `${/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)?'Mobile':'Desktop'} · ${navigator.platform||''}`;
+      $('#screenBrief').textContent = `${window.screen.width}x${window.screen.height} @ ${window.devicePixelRatio}x`;
+      $('#lastUpdated').textContent = now();
+      $('#timestamp').textContent = now();
+
+      // memory
+      $('#memBrief').textContent = (navigator.deviceMemory ? navigator.deviceMemory + ' GB' : 'Unknown');
+
+      // perf
+      $('#perfBrief').textContent = (navigator.hardwareConcurrency && navigator.hardwareConcurrency > 4) ? 'High' : 'Standard';
+
+      // battery quick
+      const batteryEl = document.querySelector('[data-battery]');
+      $('#batteryBrief').textContent = batteryEl ? batteryEl.textContent : '—';
+      $('#chargingBrief').textContent = batteryEl && batteryEl.textContent.includes('Charging')? 'Yes':'No';
+
+      // network
+      const conn = navigator.connection || {};
+      $('#connBrief').textContent = `${(conn.effectiveType||'unknown').toUpperCase()} ${conn.downlink?`(${conn.downlink} Mbps)`:''}`;
     }
 
-    function getConnectionQuality() {
-      if (!('connection' in navigator)) return "Unknown";
-      const conn = navigator.connection;
-      const effectiveType = conn?.effectiveType || "unknown";
-      const speed = conn?.downlink ? `${conn.downlink} Mbps` : "";
-      return `${effectiveType.toUpperCase()}${speed ? ` (${speed})` : ""}`;
+    // Ping test (simple fetch to a known endpoint)
+    async function pingTest(url='https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png',count=4){
+      const results=[];
+      for(let i=0;i<count;i++){
+        const t0 = performance.now();
+        try{
+          const resp = await fetch(url, {cache:'no-store', mode:'no-cors'});
+          const t1 = performance.now();
+          results.push(Math.round(t1-t0));
+        }catch(e){
+          // mode no-cors prevents reading response but timing still works in many browsers
+          const t1 = performance.now(); results.push(Math.round(t1-t0));
+        }
+      }
+      const avg = Math.round(results.reduce((a,b)=>a+b,0)/results.length);
+      return {rtts:results, avg};
     }
 
-    // Update the generateSummary function to use more detailed information
-    function generateSummary() {
-      const summary = document.createElement('div');
-      summary.className = 'system-summary';
-      summary.innerHTML = `
-        <div class="summary-card">
-          <h3>🔍 Quick System Overview</h3>
-          <ul style="list-style: none; padding: 0;">
-            <li>🌐 Browser: ${getBrowserName()} ${navigator.userAgent.match(/(?:Firefox|Chrome|Safari|Edge|OPR|Version|MSIE|rv:)[\s\/:](\d+(\.\d+)?)/i)?.[1] || ""}</li>
-            <li>💻 System: ${getOSName()} ${/x86_64|Win64|x64|amd64/.test(navigator.userAgent) ? "(64-bit)" : "(32-bit)"}</li>
-            <li>📱 Device: ${getDeviceType()} ${navigator.hardwareConcurrency ? `with ${navigator.hardwareConcurrency} CPU threads` : ""}</li>
-            <li>🖥️ Display: ${window.screen.width}x${window.screen.height} (${window.devicePixelRatio}x scaling)</li>
-            <li>📶 Network: ${getConnectionQuality()}</li>
-            <li>⚡ Performance: ${navigator.hardwareConcurrency > 4 ? "High" : "Standard"} Performance Device</li>
-          </ul>
-        </div>
-      `;
-      
-      document.getElementById('results').prepend(summary);
+    // Simple CPU benchmark: busy loop doing math
+    async function runCpuBench(iterations=40){
+      const results=[];
+      for(let p=0;p<iterations;p++){
+        const t0=performance.now();
+        // small math workload
+        let x=0;
+        for(let i=0;i<200000;i++) x += Math.sqrt(i+Math.random());
+        const t1 = performance.now();
+        results.push(t1-t0);
+        // yield to UI occasionally
+        if(p%5===0) await new Promise(r=>setTimeout(r,20));
+      }
+      const avg = Math.round(results.reduce((a,b)=>a+b,0)/results.length);
+      return {samples:results, avg};
     }
 
-    // Run system inspection when page loads
-    window.addEventListener('DOMContentLoaded', () => {
-      inspectSystem();
-      addTooltips();
-      generateSummary();
-      addSystemTips();
-      addExportButton();
+    // Export utilities
+    function gatherAll(){
+      return Promise.all([collectBrowser(), collectSystem(), collectDisplay(), collectNetwork(), collectStorageAndPower(), collectMedia(), collectFeatures()])
+        .then(([b,s,d,n,sp,m,f])=>({browser:b, system:s, display:d, network:n, storageAndPower:sp, media:m, features:f, timestamp: new Date().toISOString()}));
+    }
+
+    async function refreshAll(){
+      // Collect and render
+      const [b,s,d,n,sp,m,f] = await Promise.all([collectBrowser(), collectSystem(), collectDisplay(), collectNetwork(), collectStorageAndPower(), collectMedia(), collectFeatures()]);
+      renderSection('content-browser', b);
+      renderSection('content-hardware', s);
+      renderSection('content-display', d);
+      renderSection('content-network', n.concat(sp));
+      renderSection('content-media', m);
+      renderSection('content-features', f);
+      updateBriefs();
+    }
+
+    // Event wiring
+    $('#refreshBtn').addEventListener('click', ()=>{refreshAll();});
+
+    let theme = 'dark';
+    function applyTheme(){
+      document.querySelector('.app').setAttribute('data-theme', theme==='dark'?'dark':'light');
+      $('#themeToggle').textContent = theme==='dark' ? '🌙 Theme' : '☀️ Theme';
+    }
+    $('#themeToggle').addEventListener('click', ()=>{theme = theme==='dark'?'light':'dark'; applyTheme();});
+
+    $('#exportJson').addEventListener('click', async ()=>{
+      const data = await gatherAll();
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='system-inspector.json'; a.click();
+      URL.revokeObjectURL(url);
     });
+
+    $('#copyBtn').addEventListener('click', async ()=>{
+      const data = await gatherAll();
+      const text = JSON.stringify(data, null, 2);
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(()=>alert('Copied to clipboard')) .catch(()=>prompt('Copy the JSON below', text));
+      } else {
+        prompt('Copy the JSON below', text);
+      }
+    });
+
+    $('#pingTest').addEventListener('click', async ()=>{
+      const btn = $('#pingTest'); btn.textContent='Pinging...'; btn.disabled=true;
+      try{
+        const res = await pingTest();
+        alert('Ping RTTs: ' + res.rtts.join(', ') + ' ms \\nAverage: ' + res.avg + ' ms');
+      }catch(e){alert('Ping failed: '+ e.message)}
+      btn.textContent='Ping Test'; btn.disabled=false;
+    });
+
+    $('#runBench').addEventListener('click', async ()=>{
+      const btn = $('#runBench'); btn.textContent='Running...'; btn.disabled=true;
+      const res = await runCpuBench(20);
+      alert('CPU benchmark average: ' + Math.round(res.avg) + ' ms per batch');
+      btn.textContent='🚀 Run Benchmark'; btn.disabled=false;
+    });
+
+    $('#clearCache').addEventListener('click', ()=>{
+      try{localStorage.clear(); sessionStorage.clear(); alert('Storage cleared (local/session)');}catch(e){alert('Could not clear storage')}
+    });
+
+    // Search filter
+    $('#searchInput').addEventListener('input', (e)=>{
+      const q = e.target.value.trim().toLowerCase();
+      $$('.detail').forEach(d=>{
+        const label = d.querySelector('.label').textContent.toLowerCase();
+        const val = d.querySelector('.value').textContent.toLowerCase();
+        d.style.display = (!q || label.includes(q) || val.includes(q)) ? '' : 'none';
+      });
+    });
+
+    // Collapsible sections
+    $$('.section .header').forEach(h=>{
+      h.addEventListener('click', ()=>{
+        const content = h.parentElement.querySelector('.content');
+        content.style.display = content.style.display === 'none' ? '' : 'none';
+      });
+    });
+
+    // Initial run
+    applyTheme();
+    refreshAll();
+
+    // Update some brief values periodically
+    setInterval(()=>{ updateBriefs(); }, 5000);
+  })();
   </script>
 </body>
 </html>
